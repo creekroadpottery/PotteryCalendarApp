@@ -1,6 +1,6 @@
-# Pottery Studio Manager — Complete Prototype
+# Pottery Maker Manager — Complete Prototype
 # Enhanced with Portfolio Management and Studio Journal
-# Run with: streamlit run pottery_studio_manager.py
+# Run with: streamlit run pottery_maker_manager.py
 
 import uuid
 import os
@@ -12,7 +12,7 @@ import streamlit as st
 from PIL import Image
 import io
 
-APP_TITLE = "Pottery Studio Manager"
+APP_TITLE = "Pottery Maker Manager"
 EVENTS_PATH = "data/events.csv"
 JOURNAL_PATH = "data/journal_entries.csv"
 PORTFOLIO_PATH = "data/finished_works.csv"
@@ -120,7 +120,16 @@ def load_portfolio(path: str = PORTFOLIO_PATH) -> pd.DataFrame:
             "id", "title", "piece_type", "completion_date", "clay_body", "glaze_combo",
             "firing_temp", "dimensions", "weight", "time_invested", "materials_cost",
             "who_for", "what_for", "change_intended", "observations", "challenges",
-            "successes", "would_change", "image_filename", "linked_event_id", "created_at"
+            "successes", "would_change", "image_filename", "linked_event_id", "created_at",
+            # Technical timeline
+            "bisque_fire_date", "glaze_fire_date", "refire_date", "cone_temp", 
+            "actual_clay_type", "actual_glaze",
+            # Design elements (checkboxes)
+            "silhouette", "size", "form_shape", "symmetry", "harmony", "color", 
+            "texture", "asymmetry", "negative_space", "pattern", "functionality", 
+            "line", "emotion", "symbols", "weight_element", "sound",
+            # Overall ratings
+            "technical_success", "artistic_success", "functionality_rating", "personal_satisfaction"
         ]
         return pd.DataFrame(columns=cols)
 
@@ -222,6 +231,27 @@ def render_portfolio_piece(piece_row, show_full=False):
                 if piece_row.get("firing_temp"):
                     st.caption(f"Firing: {piece_row['firing_temp']}")
                     
+                # Professional ratings (if available)
+                if pd.notna(piece_row.get("technical_success")) and piece_row.get("technical_success") > 0:
+                    ratings = []
+                    if piece_row.get("technical_success"):
+                        ratings.append(f"Technical: {piece_row['technical_success']}/5")
+                    if piece_row.get("artistic_success"):
+                        ratings.append(f"Artistic: {piece_row['artistic_success']}/5")
+                    if piece_row.get("personal_satisfaction"):
+                        ratings.append(f"Satisfaction: {piece_row['personal_satisfaction']}/5")
+                    if ratings:
+                        st.caption("⭐ " + " • ".join(ratings))
+                
+                # Design elements achieved (show checked ones)
+                achieved_elements = []
+                design_elements = ["silhouette", "harmony", "form_shape", "color", "texture", "functionality", "emotion"]
+                for element in design_elements:
+                    if piece_row.get(element) == True:
+                        achieved_elements.append(element.replace("_", " ").title())
+                if achieved_elements:
+                    st.caption(f"✨ Achieved: {', '.join(achieved_elements[:4])}{'...' if len(achieved_elements) > 4 else ''}")
+                    
                 # Reflections
                 if piece_row.get("observations"):
                     st.markdown(f"**Observations:** {piece_row['observations']}")
@@ -234,6 +264,12 @@ def render_portfolio_piece(piece_row, show_full=False):
                     details.append(piece_row["glaze_combo"])
                 if details:
                     st.caption(" • ".join(details))
+                
+                # Show ratings in compact view
+                if pd.notna(piece_row.get("personal_satisfaction")) and piece_row.get("personal_satisfaction") > 0:
+                    satisfaction = piece_row.get("personal_satisfaction", 0)
+                    stars = "⭐" * int(satisfaction)
+                    st.caption(f"Satisfaction: {stars} ({satisfaction}/5)")
 
 # ---------- Main App ----------
 
@@ -242,7 +278,7 @@ st.title(APP_TITLE)
 
 with st.sidebar:
     st.subheader("🏺 Creek Road Pottery")
-    st.markdown("*Complete studio management*")
+    st.markdown("*Complete maker management*")
     
     st.subheader("Quick Filters")
     selected_month = st.date_input("Month", value=date.today().replace(day=1))
@@ -374,6 +410,67 @@ with tab_portfolio:
                 time_invested = st.number_input("Time Invested (hours)", min_value=0.0, step=0.5)
                 weight = st.text_input("Weight", placeholder="1.2 lbs, 550g")
                 
+            # Professional Analysis
+            st.markdown("### Professional Analysis")
+            
+            # Technical Tracking
+            st.markdown("**Technical Timeline**")
+            tech_col1, tech_col2, tech_col3 = st.columns(3)
+            with tech_col1:
+                bisque_fire_date = st.date_input("Bisque Fire Date", value=None)
+                glaze_fire_date = st.date_input("Glaze Fire Date", value=None)
+            with tech_col2:
+                refire_date = st.date_input("Re-fire Date", value=None)
+                cone_temp = st.text_input("Cone Temp", placeholder="Cone 6, ^04, etc.")
+            with tech_col3:
+                actual_clay_type = st.text_input("Actual Clay Used", placeholder="Final clay body used")
+                actual_glaze = st.text_input("Final Glaze", placeholder="Final glaze combination")
+            
+            # Design Elements Assessment
+            st.markdown("**Design Elements Assessment**")
+            st.caption("Check the elements that were successfully achieved in this piece")
+            
+            # Create columns for checkboxes
+            elem_col1, elem_col2, elem_col3, elem_col4 = st.columns(4)
+            
+            with elem_col1:
+                st.markdown("**Form & Structure**")
+                silhouette = st.checkbox("Silhouette")
+                size = st.checkbox("Size")
+                form_shape = st.checkbox("Form/Shape")
+                symmetry = st.checkbox("Symmetry")
+                
+            with elem_col2:
+                st.markdown("**Visual Elements**")
+                harmony = st.checkbox("Harmony")
+                color = st.checkbox("Color")
+                texture = st.checkbox("Texture")
+                asymmetry = st.checkbox("Asymmetry")
+                
+            with elem_col3:
+                st.markdown("**Design Principles**")
+                negative_space = st.checkbox("Negative Space")
+                pattern = st.checkbox("Pattern")
+                functionality = st.checkbox("Functionality")
+                line = st.checkbox("Line")
+                
+            with elem_col4:
+                st.markdown("**Expressive Quality**")
+                emotion = st.checkbox("Emotion")
+                symbols = st.checkbox("Symbols")
+                weight_design = st.checkbox("Weight")
+                sound = st.checkbox("Sound")
+            
+            # Overall Assessment
+            st.markdown("**Overall Assessment**")
+            overall_col1, overall_col2 = st.columns(2)
+            with overall_col1:
+                technical_success = st.slider("Technical Success", 1, 5, 3, help="1=Major issues, 5=Flawless execution")
+                artistic_success = st.slider("Artistic Success", 1, 5, 3, help="1=Didn't achieve vision, 5=Exceeded expectations")
+            with overall_col2:
+                functionality_rating = st.slider("Functionality", 1, 5, 3, help="1=Not functional, 5=Perfect for intended use")
+                personal_satisfaction = st.slider("Personal Satisfaction", 1, 5, 3, help="1=Disappointed, 5=Thrilled")
+            
             # Reflection
             st.markdown("### Reflection")
             observations = st.text_area("Observations", placeholder="How did the piece turn out? What surprised you?")
@@ -420,6 +517,35 @@ with tab_portfolio:
                     "image_filename": image_filename,
                     "linked_event_id": linked_event_id,
                     "created_at": _now_tzless(),
+                    # Technical timeline
+                    "bisque_fire_date": bisque_fire_date,
+                    "glaze_fire_date": glaze_fire_date,
+                    "refire_date": refire_date,
+                    "cone_temp": cone_temp.strip(),
+                    "actual_clay_type": actual_clay_type.strip(),
+                    "actual_glaze": actual_glaze.strip(),
+                    # Design elements
+                    "silhouette": silhouette,
+                    "size": size,
+                    "form_shape": form_shape,
+                    "symmetry": symmetry,
+                    "harmony": harmony,
+                    "color": color,
+                    "texture": texture,
+                    "asymmetry": asymmetry,
+                    "negative_space": negative_space,
+                    "pattern": pattern,
+                    "functionality": functionality,
+                    "line": line,
+                    "emotion": emotion,
+                    "symbols": symbols,
+                    "weight_element": weight_design,  # Design element checkbox
+                    "sound": sound,
+                    # Overall ratings
+                    "technical_success": technical_success,
+                    "artistic_success": artistic_success,
+                    "functionality_rating": functionality_rating,
+                    "personal_satisfaction": personal_satisfaction,
                 }
                 
                 st.session_state.portfolio_df = pd.concat([
