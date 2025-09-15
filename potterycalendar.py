@@ -771,8 +771,9 @@ if "calendar_date" not in st.session_state:
     st.session_state.calendar_date = date.today()
 
 # Tabs
-    tab_calendar, tab_tracker, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all, tab_about = st.tabs([
-    "📅 Calendar", "⏱️ Time Tracker", "🎯 Goals", "🏺 Portfolio", "📓 Journal", "🔍 Search", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events",, "ℹ️ About"])
+tab_calendar, tab_tracker, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all = st.tabs([
+    "📅 Calendar", "⏱️ Time Tracker", "🎯 Goals", "🏺 Portfolio", "📓 Journal", "🔍 Search", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events",
+])
 
 # ---------- Calendar Tab (Add Event) ----------
 with tab_calendar:
@@ -1967,57 +1968,4 @@ with tab_search:
 
     else:
         st.caption("Type a search term to find matches across Events, Journal, Portfolio, and Goals.")
-
-
-
-
-
-# ---------- Studio Tab ----------
-    section_header("About")
-    st.markdown("""
-**Pottery Maker Manager** keeps my studio work organized, using the same simple feel as my Pottery Cost Analysis app. It tracks time, manages events, and helps me plan work without a lot of fuss.
-
-**What it is**
-A single Streamlit app with tabs for Calendar, Time Tracker, Goals, Portfolio, Journal, Search, and optional Export. Data saves to CSV files in a data folder so I stay in control.
-
-**Why I use it**
-I want a clear view of my days at the wheel and the kiln. A small tool that helps me plan and review, then get back to the clay.
-""")
-
-    st.markdown("""
-### How to use
-
-**Calendar**
-Add events for making, firings, deliveries, shows, and open studio. Choose the category Studio or Community or Public. Use recurrence for repeating items. Export CSV or an iCal file if you need to share.
-
-**Time Tracker**
-Pick an activity and press Start Timer. Press Stop Timer to save. The app records start time, end time, and minutes. Use Quick Entry for manual logs. Export your time CSV any time.
-
-**Goals**
-Create simple goals with status and target dates. Log progress notes as you work. Mark done when you finish.
-
-**Portfolio**
-Track finished pieces with title, size, clay body, glaze, firing, and images if you like. Link pieces to goals if helpful.
-
-**Journal**
-Write short notes on studio days, tests, or kiln results. These entries are searchable later.
-
-**Search**
-Type a term and pick where to search. The app scans Events, Journal, Portfolio, and Goals.
-
-**Export**
-Use the Export tab to download CSV or iCal files. You can export all events or filter by Studio or Community or Public.
-
-**Data location**
-Files save in a data folder next to the app. events.csv stores calendar items. time_tracking.csv stores time logs. goals.csv stores goals. finished_works.csv stores portfolio. journal.csv stores journal entries.
-""")
-
-    st.caption("Built by Alford Wayman at Creek Road Pottery.")
-
-
-# ---------- About Tab ----------
-with tab_about:
-    section_header("About")
-    st.markdown('\n**Pottery Maker Manager** keeps my studio work organized. I can track time, plan events, and review goals and finished work. It stays small so I can focus on making pots.\n\n**What it is**\nIt is a Streamlit app with tabs for Calendar, Time Tracker, Goals, Portfolio, Journal, Search, and Export. The app saves CSV files in a data folder next to the app file. I keep control of my records. No account is needed.\n\n**How to use the app**\n\n**Calendar**\nUse the Add Event form to create items for Studio, Community, or Public. Pick a start and end. Choose All day if needed. Set a repeat rule if the event repeats. Notes and location are optional. The agenda shows the month I pick in the sidebar. The All Events tab lets me edit and export.\n\n**Time Tracker**\nChoose an activity. Press Start Timer. The live clock shows at the top. Press Stop to save. The app logs start, end, and minutes. Use Quick Entry for a manual row. Export the tracking data as CSV when needed.\n\n**Studio**\nThis view filters Studio items. Use it for throwing, trimming, glazing, kiln work, or inventory days. Keep it private. Move items to Public when I want to share dates.\n\n**Community**\nThis view filters shared shows, trails, deliveries, and meetings. Use it for group work with partners or collectives.\n\n**Public**\nThis view filters items that customers see. Use it for open studio days, shop hours, workshops, drops, and fairs. Export a Public only CSV or iCal and post it on my site.\n\n**Search**\nType a term. Pick areas to search. Matches show by section. Events use the agenda. Journal shows the latest pages. Portfolio shows pieces. Goals show status and target dates.\n\n**Goals**\nCreate clear goals with titles, dates, and notes. Update progress as work moves. Link pieces or events if helpful.\n\n**Portfolio**\nAdd finished work with title, date, size info, images, and notes. This gives me a record I can search later.\n\n**Journal**\nWrite short notes on studio days, tests, kiln results, or ideas. Keep it honest. These entries are searchable later.\n\n**Export**\nUse the Export tab for CSV and iCal files. Choose All Events or filter to Studio or Community or Public. Import the iCal to another calendar if needed.\n\n**Data location**\nThe app saves CSV files in a data folder. events.csv stores calendar events. time_tracking.csv stores time logs. goals.csv stores goals. finished_works.csv stores portfolio. journal.csv stores journal entries. Back up the folder to preserve my records.\n')
-    st.caption("Built by Alford Wayman at Creek Road Pottery.")
 
