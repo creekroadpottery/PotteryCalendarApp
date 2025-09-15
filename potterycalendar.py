@@ -499,6 +499,122 @@ def render_day_calendar(events_df, current_date):
             st.session_state.quick_add_date = current_date
             st.session_state.show_quick_add = True
 
+def render_year_calendar(events_df, current_date):
+    """Render a year calendar overview"""
+    year = current_date.year
+    
+    # Navigation
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if st.button("◀ Previous Year", key="prev_year"):
+            st.session_state.calendar_date = date(year - 1, current_date.month, 1)
+            st.rerun()
+    
+    with col2:
+        st.markdown(f"<h3 style='text-align: center; margin: 0;'>{year}</h3>", unsafe_allow_html=True)
+    
+    with col3:
+        if st.button("Next Year ▶", key="next_year"):
+            st.session_state.calendar_date = date(year + 1, current_date.month, 1)
+            st.rerun()
+    
+    # Year events summary
+    if not events_df.empty:
+        year_start = datetime.combine(date(year, 1, 1), time(0, 0))
+        year_end = datetime.combine(date(year + 1, 1, 1), time(0, 0))
+        year_events = events_df[(events_df["start"] >= year_start) & (events_df["start"] < year_end)]
+        
+        # Year stats
+        if not year_events.empty:
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Total Events", len(year_events))
+            with col2:
+                studio_count = len(year_events[year_events["category"] == "Studio"])
+                st.metric("Studio Sessions", studio_count)
+            with col3:
+                community_count = len(year_events[year_events["category"] == "Community"])  
+                st.metric("Community Events", community_count)
+            with col4:
+                public_count = len(year_events[year_events["category"] == "Public"])
+                st.metric("Public Events", public_count)
+    
+    # 12-month mini calendar grid
+    st.markdown("### Monthly Overview")
+    
+    # Render 3 rows of 4 months each
+    for row in range(3):
+        cols = st.columns(4)
+        for col in range(4):
+            month_num = row * 4 + col + 1
+            month_date = date(year, month_num, 1)
+            
+            with cols[col]:
+                # Month header
+                month_name = month_date.strftime("%B")
+                is_current_month = month_num == current_date.month and year == date.today().year
+                header_style = "background: #e3f2fd; border-radius: 4px; margin-bottom: 5px;" if is_current_month else "margin-bottom: 5px;"
+                
+                st.markdown(f"<div style='{header_style} padding: 5px; text-align: center; font-weight: bold;'>{month_name}</div>", unsafe_allow_html=True)
+                
+                # Mini month calendar
+                month_dates = get_calendar_dates(year, month_num)
+                
+                # Filter events for this month
+                month_events = pd.DataFrame()
+                if not events_df.empty:
+                    month_start = datetime.combine(date(year, month_num, 1), time(0, 0))
+                    if month_num == 12:
+                        month_end = datetime.combine(date(year + 1, 1, 1), time(0, 0))
+                    else:
+                        month_end = datetime.combine(date(year, month_num + 1, 1), time(0, 0))
+                    month_events = events_df[(events_df["start"] >= month_start) & (events_df["start"] < month_end)]
+                
+                # Create mini calendar HTML
+                mini_cal = "<div style='font-size: 10px;'>"
+                
+                # Day headers
+                mini_cal += "<div style='display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; margin-bottom: 2px;'>"
+                for day_name in ["M", "T", "W", "T", "F", "S", "S"]:
+                    mini_cal += f"<div style='text-align: center; font-weight: bold;'>{day_name}</div>"
+                mini_cal += "</div>"
+                
+                # Calendar days
+                mini_cal += "<div style='display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;'>"
+                for day_date in month_dates:
+                    if day_date is None:
+                        mini_cal += "<div style='height: 15px;'></div>"
+                    else:
+                        # Check if this day has events
+                        day_has_events = False
+                        if not month_events.empty:
+                            day_has_events = len(month_events[month_events["start"].dt.date == day_date]) > 0
+                        
+                        is_today = day_date == date.today()
+                        
+                        cell_style = "height: 15px; text-align: center; font-size: 9px;"
+                        if is_today:
+                            cell_style += " background: #2196F3; color: white; border-radius: 2px;"
+                        elif day_has_events:
+                            cell_style += " background: #4CAF50; color: white; border-radius: 2px;"
+                        
+                        mini_cal += f"<div style='{cell_style}'>{day_date.day}</div>"
+                
+                mini_cal += "</div></div>"
+                
+                # Show event count for this month
+                if not month_events.empty:
+                    mini_cal += f"<div style='text-align: center; font-size: 10px; color: #666; margin-top: 3px;'>{len(month_events)} events</div>"
+                
+                st.markdown(mini_cal, unsafe_allow_html=True)
+                
+                # Click to navigate to month
+                if st.button(f"View {month_name}", key=f"goto_month_{month_num}", help=f"Switch to {month_name} {year}"):
+                    st.session_state.calendar_date = month_date
+                    st.session_state.calendar_view_mode = "Month"
+                    st.rerun()
+
 def filter_events_df(df: pd.DataFrame) -> pd.DataFrame:
     """Filter events DataFrame based on sidebar filters"""
     if df.empty:
@@ -608,7 +724,7 @@ with tab_calendar:
     with calendar_col1:
         calendar_view = st.radio(
             "Calendar View", 
-            ["Month", "Week", "Day", "Agenda"], 
+            ["Month", "Week", "Day", "Year", "Agenda"], 
             horizontal=True,
             key="calendar_view_mode"
         )
@@ -640,6 +756,10 @@ with tab_calendar:
         section_header("📅 Day View")
         render_day_calendar(st.session_state.events_df, st.session_state.calendar_date)
         
+    elif calendar_view == "Year":
+        section_header("📅 Year View")
+        render_year_calendar(st.session_state.events_df, st.session_state.calendar_date)
+        
     elif calendar_view == "Agenda":
         section_header("📅 Agenda View")
         filtered_events = filter_events_df(st.session_state.events_df)
@@ -648,7 +768,7 @@ with tab_calendar:
     st.markdown("---")
     
     # Add new event form (moved below calendar views)
-    section_header("➕ Schedule Studio Time")
+    section_header("➕ Schedule Event")
     with st.form("add_event_form", clear_on_submit=False):
         c1, c2 = st.columns([2, 1])
         with c1:
@@ -1049,6 +1169,17 @@ with tab_journal:
                 with col1:
                     st.markdown(f"**{entry['title']}**")
                     st.markdown(entry["content"])
+                    
+                    # Show philosophical reflections if they exist
+                    if entry.get("frankl_reflection") and entry["frankl_reflection"].strip():
+                        st.markdown("---")
+                        st.markdown("**🤔 Second Life Reflection:**")
+                        st.markdown(f"*{entry['frankl_reflection']}*")
+                    
+                    if entry.get("time_awareness_reflection") and entry["time_awareness_reflection"].strip():
+                        st.markdown("**⏰ Time Awareness:**")
+                        st.markdown(f"*{entry['time_awareness_reflection']}*")
+                    
                     if entry.get("techniques_practiced"):
                         st.caption(f"🎨 Techniques: {entry['techniques_practiced']}")
                     if entry.get("materials_used"):
