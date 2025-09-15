@@ -18,6 +18,7 @@ EVENTS_PATH = "data/events.csv"
 JOURNAL_PATH = "data/journal_entries.csv"
 PORTFOLIO_PATH = "data/finished_works.csv"
 GOALS_PATH = "data/goals.csv"
+TIMETRACK_PATH = "data/time_tracking.csv"
 IMAGES_DIR = "data/images"
 
 # Ensure directories exist
@@ -40,6 +41,13 @@ GLAZE_TYPES = [
     "Cone 04 Clear", "Cone 6 Clear", "Cone 10 Clear", "Celadon", 
     "Temmoku", "Shino", "Ash Glaze", "Crystalline", "Matte", 
     "Satin", "Raw Clay", "Terra Sigillata", "Other"
+]
+
+TIME_CATEGORIES = [
+    "🏺 Studio Work", "🎨 Creative Planning", "📚 Learning/Research", 
+    "💼 Business/Admin", "🍽️ Meals", "😴 Sleep", "🚿 Personal Care",
+    "🏃‍♀️ Exercise", "👥 Social", "📱 Social Media", "📺 Entertainment",
+    "🛒 Errands", "🧹 Household", "🚗 Travel", "💭 Other"
 ]
 
 RECURRENCE_MAP = {
@@ -169,6 +177,22 @@ def load_goals(path: str = GOALS_PATH) -> pd.DataFrame:
         df["completed_date"] = pd.to_datetime(df["completed_date"])
         return df
 
+@st.cache_data  
+def load_timetrack(path: str = TIMETRACK_PATH) -> pd.DataFrame:
+    try:
+        df = pd.read_csv(path, parse_dates=["start_time", "end_time"], keep_default_na=False)
+        return df
+    except FileNotFoundError:
+        df = pd.DataFrame(columns=[
+            "id", "category", "activity", "start_time", "end_time", 
+            "duration_minutes", "notes", "date", "frankl_reflection"
+        ])
+        # Ensure proper datetime types
+        df["start_time"] = pd.to_datetime(df["start_time"])
+        df["end_time"] = pd.to_datetime(df["end_time"])
+        df["date"] = pd.to_datetime(df["date"])
+        return df
+
 def save_data(df: pd.DataFrame, path: str):
     df.to_csv(path, index=False)
     # Clear relevant cache
@@ -180,6 +204,8 @@ def save_data(df: pd.DataFrame, path: str):
         load_portfolio.clear()
     elif "goals" in path:
         load_goals.clear()
+    elif "timetrack" in path:
+        load_timetrack.clear()
 
 def expand_recurrence(base_event: dict, freq_name: str, count: int | None, until: date | None):
     rule = RECURRENCE_MAP.get(freq_name)
@@ -728,14 +754,24 @@ if "portfolio_df" not in st.session_state:
     st.session_state.portfolio_df = load_portfolio()
 if "goals_df" not in st.session_state:
     st.session_state.goals_df = load_goals()
+if "timetrack_df" not in st.session_state:
+    st.session_state.timetrack_df = load_timetrack()
+
+# Initialize timer state
+if "timer_running" not in st.session_state:
+    st.session_state.timer_running = False
+if "timer_start" not in st.session_state:
+    st.session_state.timer_start = None
+if "timer_category" not in st.session_state:
+    st.session_state.timer_category = None
 
 # Initialize calendar date if not exists
 if "calendar_date" not in st.session_state:
     st.session_state.calendar_date = date.today()
 
 # Tabs
-tab_calendar, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all = st.tabs([
-    "📅 Calendar", "🎯 Goals", "🏺 Portfolio", "📓 Journal", "🔍 Search", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events",
+tab_calendar, tab_tracker, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all = st.tabs([
+    "📅 Calendar", "⏱️ Time Tracker", "🎯 Goals", "🏺 Portfolio", "📓 Journal", "🔍 Search", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events",
 ])
 
 # ---------- Calendar Tab (Add Event) ----------
@@ -972,6 +1008,250 @@ with tab_calendar:
                         st.rerun()
     else:
         st.info("📅 No events to manage yet. Create your first event above!")
+
+# ---------- Time Tracker Tab ----------
+with tab_tracker:
+    section_header("⏱️ Time Reality Check")
+    st.markdown("*Where does your finite time actually go?*")
+    
+    # Current timer status
+    col1, col2, col3 = st.columns([2, 1, 1])
+    
+    with col1:
+        if st.session_state.timer_running:
+            elapsed = datetime.now() - st.session_state.timer_start
+            elapsed_minutes = int(elapsed.total_seconds() / 60)
+            st.success(f"⏱️ **TIMER RUNNING:** {st.session_state.timer_category}")
+            st.markdown(f"**Elapsed: {elapsed_minutes} minutes**")
+        else:
+            st.info("⏱️ No timer currently running")
+    
+    with col2:
+        if not st.session_state.timer_running:
+            timer_category = st.selectbox("Activity", TIME_CATEGORIES, key="start_timer_category")
+            if st.button("▶️ Start Timer", type="primary"):
+                st.session_state.timer_running = True
+                st.session_state.timer_start = datetime.now()
+                st.session_state.timer_category = timer_category
+                st.success(f"Started timer for {timer_category}")
+                st.rerun()
+        else:
+            if st.button("⏹️ Stop Timer", type="secondary"):
+                # Calculate duration and save
+                end_time = datetime.now()
+                duration = end_time - st.session_state.timer_start
+                duration_minutes = duration.total_seconds() / 60
+                
+                new_entry = {
+                    "id": generate_id(),
+                    "category": st.session_state.timer_category,
+                    "activity": st.session_state.timer_category,
+                    "start_time": st.session_state.timer_start,
+                    "end_time": end_time,
+                    "duration_minutes": duration_minutes,
+                    "notes": "",
+                    "date": date.today(),
+                    "frankl_reflection": ""
+                }
+                
+                st.session_state.timetrack_df = pd.concat([
+                    st.session_state.timetrack_df,
+                    pd.DataFrame([new_entry])
+                ], ignore_index=True)
+                save_data(st.session_state.timetrack_df, TIMETRACK_PATH)
+                
+                # Reset timer state
+                st.session_state.timer_running = False
+                st.session_state.timer_start = None
+                st.session_state.timer_category = None
+                
+                st.success(f"Logged {duration_minutes:.1f} minutes")
+                st.rerun()
+    
+    with col3:
+        # Quick manual entry
+        if st.button("➕ Quick Entry"):
+            st.session_state.show_manual_entry = True
+    
+    # Manual time entry form
+    if st.session_state.get("show_manual_entry", False):
+        with st.form("manual_time_entry"):
+            st.markdown("### ⏰ Manual Time Entry")
+            
+            entry_col1, entry_col2 = st.columns(2)
+            with entry_col1:
+                manual_category = st.selectbox("Activity Category", TIME_CATEGORIES)
+                manual_activity = st.text_input("Specific Activity", placeholder="Throwing bowls, checking Instagram...")
+                manual_date = st.date_input("Date", value=date.today())
+            
+            with entry_col2:
+                manual_start = st.time_input("Start Time", value=time(9, 0))
+                manual_end = st.time_input("End Time", value=time(10, 0))
+                manual_notes = st.text_input("Notes", placeholder="What did you accomplish?")
+            
+            # Viktor Frankl reflection for time entries
+            frankl_time_reflection = st.text_area(
+                "If you were living this time block again, would you spend it the same way?",
+                placeholder="Was this time aligned with my values? Did it serve my bigger purpose?",
+                height=60
+            )
+            
+            form_col1, form_col2 = st.columns(2)
+            with form_col1:
+                if st.form_submit_button("💾 Log Time"):
+                    start_dt = datetime.combine(manual_date, manual_start)
+                    end_dt = datetime.combine(manual_date, manual_end)
+                    duration_minutes = (end_dt - start_dt).total_seconds() / 60
+                    
+                    if duration_minutes > 0:
+                        new_entry = {
+                            "id": generate_id(),
+                            "category": manual_category,
+                            "activity": manual_activity if manual_activity.strip() else manual_category,
+                            "start_time": start_dt,
+                            "end_time": end_dt,
+                            "duration_minutes": duration_minutes,
+                            "notes": manual_notes.strip(),
+                            "date": manual_date,
+                            "frankl_reflection": frankl_time_reflection.strip()
+                        }
+                        
+                        st.session_state.timetrack_df = pd.concat([
+                            st.session_state.timetrack_df,
+                            pd.DataFrame([new_entry])
+                        ], ignore_index=True)
+                        save_data(st.session_state.timetrack_df, TIMETRACK_PATH)
+                        st.session_state.show_manual_entry = False
+                        st.success(f"Logged {duration_minutes:.0f} minutes of {manual_category}")
+                        st.rerun()
+                    else:
+                        st.error("End time must be after start time")
+            
+            with form_col2:
+                if st.form_submit_button("❌ Cancel"):
+                    st.session_state.show_manual_entry = False
+                    st.rerun()
+    
+    # Today's time breakdown
+    st.markdown("---")
+    section_header("📊 Today's Reality Check")
+    
+    if not st.session_state.timetrack_df.empty:
+        today_data = st.session_state.timetrack_df[
+            st.session_state.timetrack_df["date"].dt.date == date.today()
+        ]
+        
+        if not today_data.empty:
+            # Calculate time by category for today
+            today_summary = today_data.groupby("category")["duration_minutes"].sum().sort_values(ascending=False)
+            
+            summary_col1, summary_col2 = st.columns(2)
+            
+            with summary_col1:
+                st.markdown("**Time by Activity Today:**")
+                total_tracked = today_summary.sum()
+                
+                for category, minutes in today_summary.items():
+                    hours = minutes / 60
+                    percentage = (minutes / total_tracked * 100) if total_tracked > 0 else 0
+                    
+                    # Color code based on category
+                    if "Studio" in category or "Creative" in category:
+                        color = "🟢"
+                    elif "Social Media" in category or "Entertainment" in category:
+                        color = "🔴"
+                    elif "Sleep" in category or "Meals" in category:
+                        color = "🟡"
+                    else:
+                        color = "⚪"
+                    
+                    st.markdown(f"{color} **{category}:** {hours:.1f}h ({percentage:.0f}%)")
+                
+                st.markdown(f"**Total Tracked:** {total_tracked/60:.1f} hours")
+                st.caption(f"Untracked time: {24 - (total_tracked/60):.1f} hours")
+            
+            with summary_col2:
+                st.markdown("**The Hard Truth:**")
+                
+                # Reality check calculations
+                studio_time = today_summary.get("🏺 Studio Work", 0) + today_summary.get("🎨 Creative Planning", 0)
+                distraction_time = today_summary.get("📱 Social Media", 0) + today_summary.get("📺 Entertainment", 0)
+                
+                if studio_time > 0:
+                    st.success(f"🏺 **{studio_time/60:.1f} hours** on pottery/creative work")
+                else:
+                    st.error("🏺 **0 hours** on pottery today")
+                
+                if distraction_time > 0:
+                    st.warning(f"📱 **{distraction_time/60:.1f} hours** on social media/entertainment")
+                    
+                    if studio_time > 0:
+                        ratio = distraction_time / studio_time
+                        if ratio > 2:
+                            st.error(f"⚠️ You spent {ratio:.1f}x more time on distractions than pottery!")
+                        elif ratio > 1:
+                            st.warning(f"📊 Distractions outweighed pottery {ratio:.1f}:1")
+                        else:
+                            st.info(f"💪 Pottery time exceeded distractions!")
+                
+                # Viktor Frankl reality check
+                if studio_time < 60:  # Less than 1 hour
+                    st.markdown("---")
+                    st.markdown("**🤔 Frankl's Question:**")
+                    st.markdown("*If you knew this was your last day, would you spend less than an hour on what matters most to you?*")
+        else:
+            st.info("⏱️ No time tracked today. Start logging to see your reality!")
+    else:
+        st.info("⏱️ No time data yet. Start tracking to discover where your precious hours go!")
+    
+    # Weekly summary
+    if not st.session_state.timetrack_df.empty:
+        st.markdown("---")
+        section_header("📈 This Week's Pattern")
+        
+        # Get this week's data
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        week_data = st.session_state.timetrack_df[
+            (st.session_state.timetrack_df["date"].dt.date >= week_start) & 
+            (st.session_state.timetrack_df["date"].dt.date <= date.today())
+        ]
+        
+        if not week_data.empty:
+            week_summary = week_data.groupby("category")["duration_minutes"].sum().sort_values(ascending=False)
+            
+            week_col1, week_col2 = st.columns(2)
+            
+            with week_col1:
+                st.markdown("**Weekly Totals:**")
+                for category, minutes in week_summary.items():
+                    hours = minutes / 60
+                    st.markdown(f"• **{category}:** {hours:.1f} hours")
+            
+            with week_col2:
+                # Weekly insights
+                studio_weekly = week_summary.get("🏺 Studio Work", 0) + week_summary.get("🎨 Creative Planning", 0)
+                days_tracked = len(week_data["date"].dt.date.unique())
+                
+                st.markdown("**Weekly Insights:**")
+                st.metric("🏺 Studio Hours This Week", f"{studio_weekly/60:.1f}")
+                st.metric("📊 Days Tracked", days_tracked)
+                
+                if studio_weekly > 0:
+                    avg_daily = studio_weekly / 7
+                    st.caption(f"Average: {avg_daily/60:.1f} hours/day on pottery")
+                
+                # Week reality check
+                if studio_weekly < 420:  # Less than 7 hours per week
+                    st.warning("⚠️ Less than 1 hour/day average on pottery this week")
+    
+    # Export time tracking data
+    if not st.session_state.timetrack_df.empty:
+        st.download_button(
+            "📋 Export Time Data CSV",
+            data=st.session_state.timetrack_df.to_csv(index=False).encode("utf-8"),
+            file_name=f"pottery_time_tracking_{date.today().isoformat()}.csv",
+            mime="text/csv"
+        )
 
 # ---------- Goals Tab ----------
 with tab_goals:
