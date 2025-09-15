@@ -1131,6 +1131,15 @@ with tab_goals:
     else:
         st.info("🎯 No goals yet. Create your first intentional goal above!")
         st.markdown("**Remember:** Goals without deadlines are just wishes. Goals with deep 'why' become reality.")
+    
+    # Export goals data
+    if not goals_df.empty:
+        st.download_button(
+            "📋 Export Goals CSV", 
+            data=goals_df.to_csv(index=False).encode("utf-8"),
+            file_name=f"pottery_goals_{date.today().isoformat()}.csv",
+            mime="text/csv"
+        )
 
 # ---------- Portfolio Tab ----------
 with tab_portfolio:
@@ -1362,7 +1371,7 @@ with tab_portfolio:
             for _, piece in filtered_df.iterrows():
                 render_portfolio_piece(piece, show_full=True)
                 
-        # Export button
+        # Export portfolio data
         st.download_button(
             "📋 Export Portfolio CSV",
             data=filtered_df.to_csv(index=False).encode("utf-8"),
@@ -1371,6 +1380,20 @@ with tab_portfolio:
         )
     else:
         st.info("🏺 No finished pieces yet. Document your first piece above!")
+        
+    # Always show export option for template
+    if st.session_state.portfolio_df.empty:
+        template_df = pd.DataFrame(columns=[
+            "title", "piece_type", "completion_date", "clay_body", "glaze_combo",
+            "who_for", "what_for", "change_intended", "observations"
+        ])
+        st.download_button(
+            "📄 Download Portfolio Template",
+            data=template_df.to_csv(index=False).encode("utf-8"),
+            file_name="pottery_portfolio_template.csv",
+            mime="text/csv",
+            help="Download a template to get started"
+        )
 
 # ---------- Journal Tab ----------
 with tab_journal:
@@ -1481,6 +1504,15 @@ with tab_journal:
                     st.markdown(entry["mood"])
     else:
         st.info("📓 Start your first studio journal entry above!")
+        
+    # Export journal data
+    if not journal_df.empty:
+        st.download_button(
+            "📋 Export Journal CSV",
+            data=journal_df.to_csv(index=False).encode("utf-8"),
+            file_name=f"pottery_journal_{date.today().isoformat()}.csv",
+            mime="text/csv"
+        )
 
 # Studio Tab
 with tab_studio:
