@@ -114,7 +114,8 @@ def load_journal(path: str = JOURNAL_PATH) -> pd.DataFrame:
     except FileNotFoundError:
         df = pd.DataFrame(columns=[
             "id", "entry_date", "title", "content", "mood", "techniques_practiced",
-            "materials_used", "linked_event_id", "created_at"
+            "materials_used", "linked_event_id", "created_at", "frankl_reflection", 
+            "time_awareness_reflection"
         ])
         # Ensure proper datetime types
         df["entry_date"] = pd.to_datetime(df["entry_date"])
@@ -555,6 +556,24 @@ with st.sidebar:
     st.subheader("🏺 Creek Road Pottery")
     st.markdown("*Complete maker management*")
     
+    # Time Scarcity Awareness
+    with st.expander("⏰ Time Awareness", expanded=False):
+        st.markdown("**Living with Intention**")
+        birth_year = st.number_input("Birth Year (optional)", min_value=1920, max_value=2010, value=1980, help="For time awareness calculation")
+        if birth_year:
+            current_age = date.today().year - birth_year
+            remaining_days = (90 - current_age) * 365
+            remaining_years = 90 - current_age
+            
+            if remaining_days > 0:
+                st.markdown(f"**If you live to 90, you may have roughly:**")
+                st.markdown(f"🗓️ **{remaining_days:,} days** remaining")
+                st.markdown(f"📅 **{remaining_years} years** remaining")
+                st.caption("Each day in the studio matters.")
+            else:
+                st.markdown("🎉 **Every day is bonus time!**")
+                st.caption("You've exceeded the 90-year mark - what a gift!")
+    
     st.subheader("Quick Filters")
     selected_month = st.date_input("Month", value=date.today().replace(day=1))
     cat_filter = st.multiselect("Categories", CATEGORY_OPTIONS, default=CATEGORY_OPTIONS)
@@ -962,6 +981,27 @@ with tab_journal:
             techniques_practiced = st.text_input("Techniques Practiced", placeholder="Pulling handles, trimming feet, wax resist...")
             materials_used = st.text_input("Materials Used", placeholder="B-Mix, Temmoku glaze, wax...")
             
+            # Viktor Frankl Reflection
+            st.markdown("---")
+            st.markdown("### 🤔 Daily Reflection")
+            st.markdown('*"Live as if you were living already for the second time and as if you had acted the first time as wrongly as you are about to act now!"*')
+            st.caption("— Viktor Frankl")
+            
+            frankl_reflection = st.text_area(
+                "If you were living today for the second time, what would you do differently?",
+                placeholder="What choices would I make differently in the studio? How would I approach my craft with more intention? What would I prioritize?",
+                height=100,
+                help="Reflect on today's studio time through the lens of living it again - what would you change?"
+            )
+            
+            # Time awareness reflection
+            time_awareness = st.text_area(
+                "Knowing your remaining days are finite, how does this change your approach to today's work?",
+                placeholder="How does time scarcity influence my creative choices? What becomes more important when I remember life is limited?",
+                height=80,
+                help="Connect your creative work to the reality of limited time"
+            )
+            
             # Link to event
             recent_events = st.session_state.events_df.tail(10)
             event_options = ["None"] + [f"{row['title']} ({row['start'].strftime('%m/%d')})" for _, row in recent_events.iterrows()]
@@ -986,6 +1026,8 @@ with tab_journal:
                     "materials_used": materials_used.strip(),
                     "linked_event_id": linked_event_id,
                     "created_at": _now_tzless(),
+                    "frankl_reflection": frankl_reflection.strip(),
+                    "time_awareness_reflection": time_awareness.strip(),
                 }
                 
                 st.session_state.journal_df = pd.concat([
