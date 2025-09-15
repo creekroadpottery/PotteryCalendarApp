@@ -1891,6 +1891,32 @@ with tab_journal:
             file_name=f"pottery_journal_{date.today().isoformat()}.csv",
             mime="text/csv"
         )
+# ---------- Search Tab ----------
+with tab_search:
+    section_header("Search")
+    q = st.text_input("Search term", placeholder="mug, shino, Cone 6, Harford Fair, goal title")
+    scope = st.multiselect(
+        "Search areas",
+        ["Events", "Journal", "Portfolio", "Goals"],
+        default=["Events", "Journal", "Portfolio", "Goals"],
+    )
+
+    if q.strip():
+        st.markdown(f"**Results for:** {q}")
+
+        # Events
+        if "Events" in scope:
+            st.markdown("#### Events")
+            _df = st.session_state.events_df.copy()
+            if not _df.empty:
+                mask = _df.astype(str).apply(lambda c: c.str.contains(q, case=False, na=False)).any(axis=1)
+                hits = _df[mask].sort_values("start")
+                if not hits.empty:
+                    render_agenda(hits)
+                else:
+                    st.caption("No events found")
+            else:
+                st.caption("No events yet")
 
 # Studio Tab
 with tab_studio:
