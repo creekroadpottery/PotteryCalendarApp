@@ -6,7 +6,8 @@ import uuid
 import os
 import base64
 import calendar
-from datetime import datetime, date, time, timedelta
+import time
+from datetime import datetime, date, time as dt_time, timedelta
 from dateutil.rrule import rrule, DAILY, WEEKLY, MONTHLY, YEARLY
 import pandas as pd
 import streamlit as st
@@ -390,11 +391,11 @@ def render_month_calendar(events_df, current_date):
     # Filter events for this month - handle empty DataFrame
     month_events = pd.DataFrame()
     if not events_df.empty:
-        start_month = datetime.combine(date(year, month, 1), time(0, 0))
+        start_month = datetime.combine(date(year, month, 1), dt_time(0, 0))
         if month == 12:
-            end_month = datetime.combine(date(year + 1, 1, 1), time(0, 0))
+            end_month = datetime.combine(date(year + 1, 1, 1), dt_time(0, 0))
         else:
-            end_month = datetime.combine(date(year, month + 1, 1), time(0, 0))
+            end_month = datetime.combine(date(year, month + 1, 1), dt_time(0, 0))
         
         month_events = events_df[(events_df["start"] >= start_month) & (events_df["start"] < end_month)]
     
@@ -844,13 +845,13 @@ with tab_calendar:
             
             start_date = st.date_input("Start date", value=default_start_date)
             if all_day:
-                start_time = time(9, 0)
+                start_time = dt_time(9, 0)
                 end_date = st.date_input("End date", value=start_date)
-                end_time = time(17, 0)
+                end_time = dt_time(17, 0)
             else:
-                start_time = st.time_input("Start time", value=time(9, 0))
+                start_time = st.time_input("Start time", value=dt_time(9, 0))
                 end_date = st.date_input("End date", value=start_date)
-                end_time = st.time_input("End time", value=time(12, 0))
+                end_time = st.time_input("End time", value=dt_time(12, 0))
 
         # Recurrence
         st.markdown("**Recurrence**")
@@ -966,9 +967,9 @@ with tab_calendar:
                             edit_end_date = st.date_input("End date", value=original_end.date())
                             edit_end_time = st.time_input("End time", value=original_end.time())
                         else:
-                            edit_start_time = time(9, 0)
+                            edit_start_time = dt_time(9, 0)
                             edit_end_date = st.date_input("End date", value=original_end.date())
-                            edit_end_time = time(17, 0)
+                            edit_end_time = dt_time(17, 0)
                     
                     edit_notes = st.text_area("Notes", value=selected_event.get('notes', ''))
                     
@@ -982,7 +983,7 @@ with tab_calendar:
                         # Update the event
                         start_dt = datetime.combine(edit_start_date, edit_start_time)
                         if edit_all_day:
-                            end_dt = datetime.combine(edit_end_date, time(23, 59))
+                            end_dt = datetime.combine(edit_end_date, dt_time(23, 59))
                         else:
                             end_dt = datetime.combine(edit_end_date, edit_end_time)
                         
@@ -1014,17 +1015,70 @@ with tab_tracker:
     section_header("⏱️ Where Does My Time Go?")
     st.markdown("*Curious about your daily time patterns?*")
     
-    # Current timer status
+    # Current timer status with LIVE CLOCK
+    if st.session_state.timer_running:
+        # Create a dramatic live timer display
+        timer_container = st.empty()
+        
+        elapsed = datetime.now() - st.session_state.timer_start
+        elapsed_seconds = int(elapsed.total_seconds())
+        elapsed_minutes = elapsed_seconds // 60
+        display_seconds = elapsed_seconds % 60
+        elapsed_hours = elapsed_minutes // 60
+        display_minutes = elapsed_minutes % 60
+        
+        # Color coding based on time elapsed
+        if elapsed_minutes < 30:
+            timer_color = "#00FF00"  # Green - just started
+            pulse_color = "🟢"
+        elif elapsed_minutes < 120:  # Less than 2 hours
+            timer_color = "#FFA500"  # Orange - getting going
+            pulse_color = "🟡"
+        else:
+            timer_color = "#FF4444"  # Red - long session
+            pulse_color = "🔴"
+        
+        # Dramatic live clock display
+        with timer_container.container():
+            st.markdown(f"""
+            <div style='
+                background: linear-gradient(45deg, {timer_color}22, {timer_color}11);
+                border: 2px solid {timer_color};
+                border-radius: 15px;
+                padding: 20px;
+                text-align: center;
+                margin: 10px 0;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            '>
+                <h2 style='color: {timer_color}; margin: 0; font-size: 24px;'>
+                    ⏱️ TIMER ACTIVE: {st.session_state.timer_category}
+                </h2>
+                <div style='font-size: 48px; font-weight: bold; color: {timer_color}; margin: 10px 0; font-family: monospace;'>
+                    {elapsed_hours:02d}:{display_minutes:02d}:{display_seconds:02d}
+                </div>
+                <p style='color: {timer_color}; font-size: 18px; margin: 5px 0;'>
+                    {pulse_color} {elapsed_minutes} minutes and counting...
+                </p>
+                <p style='color: #666; font-size: 14px; margin: 0;'>
+                    Started at {st.session_state.timer_start.strftime('%I:%M %p')}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Auto-refresh every second to update the clock
+        import time
+        time.sleep(1)
+        st.rerun()
+    
+    # Timer controls
+    col1, col2, col3 = st.columns([2, 1, 1])
+    
+    # Timer controls
     col1, col2, col3 = st.columns([2, 1, 1])
     
     with col1:
-        if st.session_state.timer_running:
-            elapsed = datetime.now() - st.session_state.timer_start
-            elapsed_minutes = int(elapsed.total_seconds() / 60)
-            st.success(f"⏱️ **TIMER RUNNING:** {st.session_state.timer_category}")
-            st.markdown(f"**Elapsed: {elapsed_minutes} minutes**")
-        else:
-            st.info("⏱️ No timer currently running")
+        if not st.session_state.timer_running:
+            st.info("⏱️ Ready to track some time?")
     
     with col2:
         if not st.session_state.timer_running:
@@ -1085,8 +1139,8 @@ with tab_tracker:
                 manual_date = st.date_input("Date", value=date.today())
             
             with entry_col2:
-                manual_start = st.time_input("Start Time", value=time(9, 0))
-                manual_end = st.time_input("End Time", value=time(10, 0))
+                manual_start = st.time_input("Start Time", value=dt_time(9, 0))
+                manual_end = st.time_input("End Time", value=dt_time(10, 0))
                 manual_notes = st.text_input("Notes", placeholder="What did you accomplish?")
             
             # Quick reflection for time entries
