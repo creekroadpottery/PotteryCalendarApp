@@ -1019,6 +1019,38 @@ with tab_tracker:
     if st.session_state.timer_running:
         # Create a dramatic live timer display
         timer_container = st.empty()
+        # Always-visible Stop button near the live clock
+        stop_top = st.button("⏹️ Stop Timer", key="stop_timer_top", type="secondary")
+        if stop_top:
+            end_time = datetime.now()
+            duration = end_time - st.session_state.timer_start
+            duration_minutes = duration.total_seconds() / 60
+
+            new_entry = {
+                "id": generate_id(),
+                "category": st.session_state.timer_category,
+                "activity": st.session_state.timer_category,
+                "start_time": st.session_state.timer_start,
+                "end_time": end_time,
+                "duration_minutes": duration_minutes,
+                "notes": "",
+                "date": date.today(),
+                "frankl_reflection": ""
+            }
+            st.session_state.timetrack_df = pd.concat(
+                [st.session_state.timetrack_df, pd.DataFrame([new_entry])],
+                ignore_index=True,
+            )
+            save_data(st.session_state.timetrack_df, TIMETRACK_PATH)
+
+            # Reset timer state
+            st.session_state.timer_running = False
+            st.session_state.timer_start = None
+            st.session_state.timer_category = None
+
+            st.success(f"Logged {duration_minutes:.1f} minutes")
+            st.rerun()
+
         
         elapsed = datetime.now() - st.session_state.timer_start
         elapsed_seconds = int(elapsed.total_seconds())
@@ -1893,79 +1925,3 @@ with tab_all:
         file_name=f"pottery_calendar_{date.today().isoformat()}.csv",
         mime="text/csv"
     )
-
-# ---------- Search Tab ----------
-with tab_search:
-    section_header("Search")
-    q = st.text_input("Search term", placeholder="mug, shino, Cone 6, Harford Fair, goal title")
-    scope = st.multiselect(
-        "Search areas",
-        ["Events", "Journal", "Portfolio", "Goals"],
-        default=["Events", "Journal", "Portfolio", "Goals"],
-    )
-
-    if q.strip():
-        st.markdown(f"**Results for:** {q}")
-
-        # Events
-        if "Events" in scope:
-            st.markdown("#### Events")
-            _df = st.session_state.events_df.copy()
-            if not _df.empty:
-                mask = _df.astype(str).apply(lambda c: c.str.contains(q, case=False, na=False)).any(axis=1)
-                hits = _df[mask].sort_values("start")
-                if not hits.empty:
-                    render_agenda(hits)
-                else:
-                    st.caption("No events found")
-            else:
-                st.caption("No events yet")
-
-        # Journal
-        if "Journal" in scope:
-            st.markdown("#### Journal")
-            jdf = st.session_state.journal_df.copy()
-            if not jdf.empty:
-                mask = jdf.astype(str).apply(lambda c: c.str.contains(q, case=False, na=False)).any(axis=1)
-                hits = jdf[mask].sort_values("entry_date", ascending=False).head(20)
-                for _, entry in hits.iterrows():
-                    with st.container(border=True):
-                        st.markdown(f"**{entry['title']}**  \n{entry['entry_date'].strftime('%Y-%m-%d')}")
-                        st.write(entry['content'])
-            else:
-                st.caption("No journal entries")
-
-        # Portfolio
-        if "Portfolio" in scope:
-            st.markdown("#### Portfolio")
-            pdf = st.session_state.portfolio_df.copy()
-            if not pdf.empty:
-                mask = pdf.astype(str).apply(lambda c: c.str.contains(q, case=False, na=False)).any(axis=1)
-                hits = pdf[mask].sort_values("completion_date", ascending=False).head(12)
-                for _, piece in hits.iterrows():
-                    try:
-                        render_portfolio_piece(piece, show_full=False)
-                    except Exception:
-                        st.markdown(f"**{piece.get('title','Untitled')}**  \n{piece.get('description','')}")
-            else:
-                st.caption("No portfolio pieces")
-
-        # Goals
-        if "Goals" in scope:
-            st.markdown("#### Goals")
-            gdf = st.session_state.goals_df.copy()
-            if not gdf.empty:
-                mask = gdf.astype(str).apply(lambda c: c.str.contains(q, case=False, na=False)).any(axis=1)
-                hits = gdf[mask].sort_values("created_date", ascending=False).head(20)
-                for _, goal in hits.iterrows():
-                    with st.container(border=True):
-                        tgt = goal['target_date'].strftime('%Y-%m-%d') if goal.get('target_date') is not None and str(goal.get('target_date')) != 'NaT' else 'None'
-                        st.markdown(f"**{goal['title']}**  \nStatus {goal.get('status','')}  \nTarget {tgt}")
-                        if goal.get("description"):
-                            st.caption(goal["description"])
-            else:
-                st.caption("No goals yet")
-
-    else:
-        st.caption("Type a search term to find matches across Events, Journal, Portfolio, and Goals.")
-
