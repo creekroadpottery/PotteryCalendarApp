@@ -1019,6 +1019,38 @@ with tab_tracker:
     if st.session_state.timer_running:
         # Create a dramatic live timer display
         timer_container = st.empty()
+        # Always-visible Stop button near the live clock
+        stop_top = st.button("⏹️ Stop Timer", key="stop_timer_top", type="secondary")
+        if stop_top:
+            end_time = datetime.now()
+            duration = end_time - st.session_state.timer_start
+            duration_minutes = duration.total_seconds() / 60
+
+            new_entry = {
+                "id": generate_id(),
+                "category": st.session_state.timer_category,
+                "activity": st.session_state.timer_category,
+                "start_time": st.session_state.timer_start,
+                "end_time": end_time,
+                "duration_minutes": duration_minutes,
+                "notes": "",
+                "date": date.today(),
+                "frankl_reflection": ""
+            }
+            st.session_state.timetrack_df = pd.concat(
+                [st.session_state.timetrack_df, pd.DataFrame([new_entry])],
+                ignore_index=True,
+            )
+            save_data(st.session_state.timetrack_df, TIMETRACK_PATH)
+
+            # Reset timer state
+            st.session_state.timer_running = False
+            st.session_state.timer_start = None
+            st.session_state.timer_category = None
+
+            st.success(f"Logged {duration_minutes:.1f} minutes")
+            st.rerun()
+
         
         elapsed = datetime.now() - st.session_state.timer_start
         elapsed_seconds = int(elapsed.total_seconds())
