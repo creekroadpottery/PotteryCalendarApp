@@ -5,6 +5,7 @@
 import uuid
 import os
 import base64
+import calendar
 from datetime import datetime, date, time, timedelta
 from dateutil.rrule import rrule, DAILY, WEEKLY, MONTHLY, YEARLY
 import pandas as pd
@@ -304,7 +305,57 @@ tab_calendar, tab_portfolio, tab_journal, tab_studio, tab_comm, tab_public, tab_
 
 # ---------- Calendar Tab (Add Event) ----------
 with tab_calendar:
-    section_header("Schedule Studio Time")
+    # Calendar view controls
+    calendar_col1, calendar_col2, calendar_col3 = st.columns([2, 2, 1])
+    
+    with calendar_col1:
+        calendar_view = st.radio(
+            "Calendar View", 
+            ["Month", "Week", "Day", "Agenda"], 
+            horizontal=True,
+            key="calendar_view_mode"
+        )
+    
+    with calendar_col2:
+        # Initialize calendar date if not exists
+        if "calendar_date" not in st.session_state:
+            st.session_state.calendar_date = date.today()
+        
+        # Date picker for quick navigation
+        selected_date = st.date_input("Jump to date", value=st.session_state.calendar_date)
+        if selected_date != st.session_state.calendar_date:
+            st.session_state.calendar_date = selected_date
+            st.rerun()
+    
+    with calendar_col3:
+        if st.button("Today", key="go_to_today"):
+            st.session_state.calendar_date = date.today()
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # Display calendar based on selected view
+    if calendar_view == "Month":
+        section_header("📅 Month View")
+        render_month_calendar(st.session_state.events_df, st.session_state.calendar_date)
+        
+    elif calendar_view == "Week":
+        section_header("📅 Week View")
+        render_week_calendar(st.session_state.events_df, st.session_state.calendar_date)
+        
+    elif calendar_view == "Day":
+        section_header("📅 Day View")
+        render_day_calendar(st.session_state.events_df, st.session_state.calendar_date)
+        
+    elif calendar_view == "Agenda":
+        section_header("📅 Agenda View")
+        filtered_events = filter_events_df(st.session_state.events_df)
+        render_agenda(filtered_events)
+    
+    st.markdown("---")
+    
+    # Add new event form (moved below calendar views)
+    section_header("➕ Schedule Studio Time")
     with st.form("add_event_form", clear_on_submit=False):
         c1, c2 = st.columns([2, 1])
         with c1:
@@ -314,7 +365,13 @@ with tab_calendar:
             location = st.text_input("Location", placeholder="Studio, Gallery, Fairgrounds")
         with c2:
             all_day = st.checkbox("All day event", value=False)
-            start_date = st.date_input("Start date", value=date.today())
+            
+            # Use quick add date if available
+            default_start_date = date.today()
+            if hasattr(st.session_state, 'quick_add_date') and st.session_state.get('show_quick_add'):
+                default_start_date = st.session_state.quick_add_date
+            
+            start_date = st.date_input("Start date", value=default_start_date)
             if all_day:
                 start_time = time(9, 0)
                 end_date = st.date_input("End date", value=start_date)
@@ -365,6 +422,10 @@ with tab_calendar:
                 st.session_state.events_df = pd.concat([df, pd.DataFrame(instances)], ignore_index=True)
                 save_data(st.session_state.events_df, EVENTS_PATH)
                 st.success(f"Added {len(instances)} event(s)")
+                
+                # Clear quick add state
+                if hasattr(st.session_state, 'show_quick_add'):
+                    st.session_state.show_quick_add = False
 
 # ---------- Portfolio Tab ----------
 with tab_portfolio:
