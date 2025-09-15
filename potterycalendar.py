@@ -498,6 +498,54 @@ def render_day_calendar(events_df, current_date):
             st.session_state.quick_add_date = current_date
             st.session_state.show_quick_add = True
 
+def filter_events_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Filter events DataFrame based on sidebar filters"""
+    if df.empty:
+        return df
+    df = df.copy()
+    # Time window for selected month
+    start_month = datetime.combine(selected_month.replace(day=1), time(0, 0))
+    if selected_month.month == 12:
+        next_month = date(selected_month.year + 1, 1, 1)
+    else:
+        next_month = date(selected_month.year, selected_month.month + 1, 1)
+    end_month = datetime.combine(next_month, time(0, 0))
+
+    df = df[(df["start"] < end_month) & (df["end"] >= start_month)]
+    if not show_past:
+        df = df[df["end"] >= _now_tzless()]
+    if cat_filter:
+        df = df[df["category"].isin(cat_filter)]
+    if task_filter:
+        df = df[df["task_type"].isin(task_filter)]
+    return df.sort_values("start")
+
+def render_agenda(df: pd.DataFrame):
+    """Render agenda list view"""
+    if df.empty:
+        st.info("No events to show")
+        return
+    # Group by day
+    df = df.copy()
+    df["day"] = df["start"].dt.date
+
+    for the_day, group in df.groupby("day"):
+        st.markdown(f"### {the_day.isoformat()}")
+        for _, row in group.sort_values("start").iterrows():
+            color = CATEGORY_COLORS.get(row["category"], "#6B7280")
+            with st.container(border=True):
+                c1, c2 = st.columns([4, 1])
+                with c1:
+                    st.markdown(f"**{row['title']}**")
+                    when = "All day" if row["all_day"] else f"{row['start'].strftime('%I:%M %p')} to {row['end'].strftime('%I:%M %p')}"
+                    st.caption(f"{row['category']} • {row['task_type']} • {when}")
+                    if row.get("location"):
+                        st.caption(f"📍 {row['location']}")
+                    if row.get("notes"):
+                        st.write(row["notes"]) 
+                with c2:
+                    badge(row["category"], color)
+
 # ---------- Main App ----------
 
 st.set_page_config(page_title=APP_TITLE, layout="wide")
@@ -968,53 +1016,6 @@ with tab_journal:
                     st.markdown(entry["mood"])
     else:
         st.info("📓 Start your first studio journal entry above!")
-
-# ---------- Studio/Community/Public Tabs (Existing Calendar Views) ----------
-def filter_events_df(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return df
-    df = df.copy()
-    # Time window for selected month
-    start_month = datetime.combine(selected_month.replace(day=1), time(0, 0))
-    if selected_month.month == 12:
-        next_month = date(selected_month.year + 1, 1, 1)
-    else:
-        next_month = date(selected_month.year, selected_month.month + 1, 1)
-    end_month = datetime.combine(next_month, time(0, 0))
-
-    df = df[(df["start"] < end_month) & (df["end"] >= start_month)]
-    if not show_past:
-        df = df[df["end"] >= _now_tzless()]
-    if cat_filter:
-        df = df[df["category"].isin(cat_filter)]
-    if task_filter:
-        df = df[df["task_type"].isin(task_filter)]
-    return df.sort_values("start")
-
-def render_agenda(df: pd.DataFrame):
-    if df.empty:
-        st.info("No events to show")
-        return
-    # Group by day
-    df = df.copy()
-    df["day"] = df["start"].dt.date
-
-    for the_day, group in df.groupby("day"):
-        st.markdown(f"### {the_day.isoformat()}")
-        for _, row in group.sort_values("start").iterrows():
-            color = CATEGORY_COLORS.get(row["category"], "#6B7280")
-            with st.container(border=True):
-                c1, c2 = st.columns([4, 1])
-                with c1:
-                    st.markdown(f"**{row['title']}**")
-                    when = "All day" if row["all_day"] else f"{row['start'].strftime('%I:%M %p')} to {row['end'].strftime('%I:%M %p')}"
-                    st.caption(f"{row['category']} • {row['task_type']} • {when}")
-                    if row.get("location"):
-                        st.caption(f"📍 {row['location']}")
-                    if row.get("notes"):
-                        st.write(row["notes"]) 
-                with c2:
-                    badge(row["category"], color)
 
 # Studio Tab
 with tab_studio:
