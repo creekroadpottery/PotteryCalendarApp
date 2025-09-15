@@ -272,6 +272,204 @@ def render_portfolio_piece(piece_row, show_full=False):
                     stars = "⭐" * int(satisfaction)
                     st.caption(f"Satisfaction: {stars} ({satisfaction}/5)")
 
+# ---------- Calendar View Functions ----------
+
+def get_calendar_dates(year, month):
+    """Get all dates for a calendar month view including padding"""
+    import calendar
+    cal = calendar.monthcalendar(year, month)
+    dates = []
+    for week in cal:
+        for day in week:
+            if day == 0:
+                dates.append(None)  # Padding for previous/next month
+            else:
+                dates.append(date(year, month, day))
+    return dates
+
+def render_month_calendar(events_df, current_date):
+    """Render a month calendar grid view"""
+    year, month = current_date.year, current_date.month
+    
+    # Calendar header
+    month_name = current_date.strftime("%B %Y")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if st.button("◀ Previous", key="prev_month"):
+            if month == 1:
+                st.session_state.calendar_date = date(year - 1, 12, 1)
+            else:
+                st.session_state.calendar_date = date(year, month - 1, 1)
+            st.rerun()
+    
+    with col2:
+        st.markdown(f"<h3 style='text-align: center; margin: 0;'>{month_name}</h3>", unsafe_allow_html=True)
+    
+    with col3:
+        if st.button("Next ▶", key="next_month"):
+            if month == 12:
+                st.session_state.calendar_date = date(year + 1, 1, 1)
+            else:
+                st.session_state.calendar_date = date(year, month + 1, 1)
+            st.rerun()
+    
+    # Day headers
+    day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    cols = st.columns(7)
+    for i, day_name in enumerate(day_names):
+        with cols[i]:
+            st.markdown(f"<div style='text-align: center; font-weight: bold; padding: 5px;'>{day_name}</div>", unsafe_allow_html=True)
+    
+    # Get calendar dates
+    dates = get_calendar_dates(year, month)
+    
+    # Filter events for this month
+    start_month = datetime.combine(date(year, month, 1), time(0, 0))
+    if month == 12:
+        end_month = datetime.combine(date(year + 1, 1, 1), time(0, 0))
+    else:
+        end_month = datetime.combine(date(year, month + 1, 1), time(0, 0))
+    
+    month_events = events_df[(events_df["start"] >= start_month) & (events_df["start"] < end_month)]
+    
+    # Render calendar grid
+    for week_start in range(0, len(dates), 7):
+        cols = st.columns(7)
+        for i in range(7):
+            day_date = dates[week_start + i]
+            with cols[i]:
+                if day_date is None:
+                    # Empty cell for padding
+                    st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
+                else:
+                    # Day cell
+                    day_events = month_events[month_events["start"].dt.date == day_date]
+                    
+                    # Day number
+                    is_today = day_date == date.today()
+                    day_style = "background: #e3f2fd; border-radius: 4px;" if is_today else ""
+                    
+                    cell_content = f"<div style='min-height: 80px; border: 1px solid #ddd; padding: 2px; {day_style}'>"
+                    cell_content += f"<div style='font-weight: bold; text-align: right; margin-bottom: 2px;'>{day_date.day}</div>"
+                    
+                    # Add events
+                    for _, event in day_events.head(3).iterrows():  # Max 3 events shown
+                        color = CATEGORY_COLORS.get(event["category"], "#6B7280")
+                        cell_content += f"""
+                        <div style='background: {color}; color: white; font-size: 10px; 
+                                   padding: 1px 3px; margin: 1px 0; border-radius: 2px; 
+                                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
+                            {event["title"][:20]}{'...' if len(event["title"]) > 20 else ''}
+                        </div>
+                        """
+                    
+                    if len(day_events) > 3:
+                        cell_content += f"<div style='font-size: 10px; color: #666;'>+{len(day_events) - 3} more</div>"
+                    
+                    cell_content += "</div>"
+                    st.markdown(cell_content, unsafe_allow_html=True)
+
+def render_week_calendar(events_df, current_date):
+    """Render a week calendar view"""
+    # Get start of week (Monday)
+    days_since_monday = current_date.weekday()
+    week_start = current_date - timedelta(days=days_since_monday)
+    week_end = week_start + timedelta(days=6)
+    
+    # Navigation
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if st.button("◀ Previous Week", key="prev_week"):
+            st.session_state.calendar_date = current_date - timedelta(days=7)
+            st.rerun()
+    
+    with col2:
+        week_range = f"{week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')}"
+        st.markdown(f"<h3 style='text-align: center; margin: 0;'>{week_range}</h3>", unsafe_allow_html=True)
+    
+    with col3:
+        if st.button("Next Week ▶", key="next_week"):
+            st.session_state.calendar_date = current_date + timedelta(days=7)
+            st.rerun()
+    
+    # Week grid
+    cols = st.columns(7)
+    for i in range(7):
+        day = week_start + timedelta(days=i)
+        day_events = events_df[events_df["start"].dt.date == day]
+        
+        with cols[i]:
+            is_today = day == date.today()
+            header_style = "background: #e3f2fd; padding: 5px; border-radius: 4px;" if is_today else "padding: 5px;"
+            
+            st.markdown(f"""
+            <div style='{header_style}'>
+                <div style='font-weight: bold; text-align: center;'>{day.strftime('%a')}</div>
+                <div style='text-align: center; font-size: 18px;'>{day.day}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Events for this day
+            for _, event in day_events.iterrows():
+                color = CATEGORY_COLORS.get(event["category"], "#6B7280")
+                time_str = "All day" if event["all_day"] else event["start"].strftime("%I:%M %p")
+                
+                st.markdown(f"""
+                <div style='background: {color}; color: white; padding: 4px; margin: 2px 0; 
+                           border-radius: 4px; font-size: 12px;'>
+                    <div style='font-weight: bold;'>{event["title"]}</div>
+                    <div style='opacity: 0.9;'>{time_str}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+def render_day_calendar(events_df, current_date):
+    """Render a single day detailed view"""
+    # Navigation
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if st.button("◀ Previous Day", key="prev_day"):
+            st.session_state.calendar_date = current_date - timedelta(days=1)
+            st.rerun()
+    
+    with col2:
+        day_name = current_date.strftime("%A, %B %d, %Y")
+        st.markdown(f"<h3 style='text-align: center; margin: 0;'>{day_name}</h3>", unsafe_allow_html=True)
+    
+    with col3:
+        if st.button("Next Day ▶", key="next_day"):
+            st.session_state.calendar_date = current_date + timedelta(days=1)
+            st.rerun()
+    
+    # Day events
+    day_events = events_df[events_df["start"].dt.date == current_date].sort_values("start")
+    
+    if not day_events.empty:
+        for _, event in day_events.iterrows():
+            color = CATEGORY_COLORS.get(event["category"], "#6B7280")
+            with st.container(border=True):
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.markdown(f"**{event['title']}**")
+                    time_str = "All day" if event["all_day"] else f"{event['start'].strftime('%I:%M %p')} - {event['end'].strftime('%I:%M %p')}"
+                    st.caption(f"{event['category']} • {event['task_type']} • {time_str}")
+                    if event.get("location"):
+                        st.caption(f"📍 {event['location']}")
+                    if event.get("notes"):
+                        st.write(event["notes"])
+                with col2:
+                    badge(event["category"], color)
+    else:
+        st.info("No events scheduled for this day")
+        st.markdown("Perfect time for some studio work! 🏺")
+        
+        # Quick add event for this day
+        if st.button("➕ Add Event for This Day", key="quick_add_day"):
+            st.session_state.quick_add_date = current_date
+            st.session_state.show_quick_add = True
+
 # ---------- Main App ----------
 
 st.set_page_config(page_title=APP_TITLE, layout="wide")
