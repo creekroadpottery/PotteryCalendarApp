@@ -93,11 +93,18 @@ def load_events(path: str = EVENTS_PATH) -> pd.DataFrame:
             df["all_day"] = df["all_day"].astype(bool)
         return df
     except FileNotFoundError:
-        cols = [
+        # Create empty DataFrame with proper column types
+        df = pd.DataFrame(columns=[
             "id", "title", "category", "task_type", "start", "end",
             "all_day", "location", "notes", "created_at", "updated_at"
-        ]
-        return pd.DataFrame(columns=cols)
+        ])
+        # Ensure proper datetime types for empty DataFrame
+        df["start"] = pd.to_datetime(df["start"])
+        df["end"] = pd.to_datetime(df["end"])
+        df["created_at"] = pd.to_datetime(df["created_at"])
+        df["updated_at"] = pd.to_datetime(df["updated_at"])
+        df["all_day"] = df["all_day"].astype(bool)
+        return df
 
 @st.cache_data
 def load_journal(path: str = JOURNAL_PATH) -> pd.DataFrame:
@@ -105,19 +112,22 @@ def load_journal(path: str = JOURNAL_PATH) -> pd.DataFrame:
         df = pd.read_csv(path, parse_dates=["entry_date", "created_at"], keep_default_na=False)
         return df
     except FileNotFoundError:
-        cols = [
+        df = pd.DataFrame(columns=[
             "id", "entry_date", "title", "content", "mood", "techniques_practiced",
             "materials_used", "linked_event_id", "created_at"
-        ]
-        return pd.DataFrame(columns=cols)
+        ])
+        # Ensure proper datetime types
+        df["entry_date"] = pd.to_datetime(df["entry_date"])
+        df["created_at"] = pd.to_datetime(df["created_at"])
+        return df
 
 @st.cache_data  
 def load_portfolio(path: str = PORTFOLIO_PATH) -> pd.DataFrame:
     try:
-        df = pd.read_csv(path, parse_dates=["completion_date", "created_at"], keep_default_na=False)
+        df = pd.read_csv(path, parse_dates=["completion_date", "created_at", "bisque_fire_date", "glaze_fire_date", "refire_date"], keep_default_na=False)
         return df
     except FileNotFoundError:
-        cols = [
+        df = pd.DataFrame(columns=[
             "id", "title", "piece_type", "completion_date", "clay_body", "glaze_combo",
             "firing_temp", "dimensions", "weight", "time_invested", "materials_cost",
             "who_for", "what_for", "change_intended", "observations", "challenges",
@@ -131,8 +141,14 @@ def load_portfolio(path: str = PORTFOLIO_PATH) -> pd.DataFrame:
             "line", "emotion", "symbols", "weight_element", "sound",
             # Overall ratings
             "technical_success", "artistic_success", "functionality_rating", "personal_satisfaction"
-        ]
-        return pd.DataFrame(columns=cols)
+        ])
+        # Ensure proper datetime types
+        df["completion_date"] = pd.to_datetime(df["completion_date"])
+        df["created_at"] = pd.to_datetime(df["created_at"])
+        df["bisque_fire_date"] = pd.to_datetime(df["bisque_fire_date"])
+        df["glaze_fire_date"] = pd.to_datetime(df["glaze_fire_date"])
+        df["refire_date"] = pd.to_datetime(df["refire_date"])
+        return df
 
 def save_data(df: pd.DataFrame, path: str):
     df.to_csv(path, index=False)
@@ -324,14 +340,16 @@ def render_month_calendar(events_df, current_date):
     # Get calendar dates
     dates = get_calendar_dates(year, month)
     
-    # Filter events for this month
-    start_month = datetime.combine(date(year, month, 1), time(0, 0))
-    if month == 12:
-        end_month = datetime.combine(date(year + 1, 1, 1), time(0, 0))
-    else:
-        end_month = datetime.combine(date(year, month + 1, 1), time(0, 0))
-    
-    month_events = events_df[(events_df["start"] >= start_month) & (events_df["start"] < end_month)]
+    # Filter events for this month - handle empty DataFrame
+    month_events = pd.DataFrame()
+    if not events_df.empty:
+        start_month = datetime.combine(date(year, month, 1), time(0, 0))
+        if month == 12:
+            end_month = datetime.combine(date(year + 1, 1, 1), time(0, 0))
+        else:
+            end_month = datetime.combine(date(year, month + 1, 1), time(0, 0))
+        
+        month_events = events_df[(events_df["start"] >= start_month) & (events_df["start"] < end_month)]
     
     # Render calendar grid
     for week_start in range(0, len(dates), 7):
@@ -344,7 +362,9 @@ def render_month_calendar(events_df, current_date):
                     st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
                 else:
                     # Day cell
-                    day_events = month_events[month_events["start"].dt.date == day_date]
+                    day_events = pd.DataFrame()
+                    if not month_events.empty:
+                        day_events = month_events[month_events["start"].dt.date == day_date]
                     
                     # Day number
                     is_today = day_date == date.today()
@@ -354,18 +374,19 @@ def render_month_calendar(events_df, current_date):
                     cell_content += f"<div style='font-weight: bold; text-align: right; margin-bottom: 2px;'>{day_date.day}</div>"
                     
                     # Add events
-                    for _, event in day_events.head(3).iterrows():  # Max 3 events shown
-                        color = CATEGORY_COLORS.get(event["category"], "#6B7280")
-                        cell_content += f"""
-                        <div style='background: {color}; color: white; font-size: 10px; 
-                                   padding: 1px 3px; margin: 1px 0; border-radius: 2px; 
-                                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
-                            {event["title"][:20]}{'...' if len(event["title"]) > 20 else ''}
-                        </div>
-                        """
-                    
-                    if len(day_events) > 3:
-                        cell_content += f"<div style='font-size: 10px; color: #666;'>+{len(day_events) - 3} more</div>"
+                    if not day_events.empty:
+                        for _, event in day_events.head(3).iterrows():  # Max 3 events shown
+                            color = CATEGORY_COLORS.get(event["category"], "#6B7280")
+                            cell_content += f"""
+                            <div style='background: {color}; color: white; font-size: 10px; 
+                                       padding: 1px 3px; margin: 1px 0; border-radius: 2px; 
+                                       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
+                                {event["title"][:20]}{'...' if len(event["title"]) > 20 else ''}
+                            </div>
+                            """
+                        
+                        if len(day_events) > 3:
+                            cell_content += f"<div style='font-size: 10px; color: #666;'>+{len(day_events) - 3} more</div>"
                     
                     cell_content += "</div>"
                     st.markdown(cell_content, unsafe_allow_html=True)
@@ -398,7 +419,11 @@ def render_week_calendar(events_df, current_date):
     cols = st.columns(7)
     for i in range(7):
         day = week_start + timedelta(days=i)
-        day_events = events_df[events_df["start"].dt.date == day]
+        
+        # Get day events - handle empty DataFrame
+        day_events = pd.DataFrame()
+        if not events_df.empty:
+            day_events = events_df[events_df["start"].dt.date == day]
         
         with cols[i]:
             is_today = day == date.today()
@@ -412,17 +437,18 @@ def render_week_calendar(events_df, current_date):
             """, unsafe_allow_html=True)
             
             # Events for this day
-            for _, event in day_events.iterrows():
-                color = CATEGORY_COLORS.get(event["category"], "#6B7280")
-                time_str = "All day" if event["all_day"] else event["start"].strftime("%I:%M %p")
-                
-                st.markdown(f"""
-                <div style='background: {color}; color: white; padding: 4px; margin: 2px 0; 
-                           border-radius: 4px; font-size: 12px;'>
-                    <div style='font-weight: bold;'>{event["title"]}</div>
-                    <div style='opacity: 0.9;'>{time_str}</div>
-                </div>
-                """, unsafe_allow_html=True)
+            if not day_events.empty:
+                for _, event in day_events.iterrows():
+                    color = CATEGORY_COLORS.get(event["category"], "#6B7280")
+                    time_str = "All day" if event["all_day"] else event["start"].strftime("%I:%M %p")
+                    
+                    st.markdown(f"""
+                    <div style='background: {color}; color: white; padding: 4px; margin: 2px 0; 
+                               border-radius: 4px; font-size: 12px;'>
+                        <div style='font-weight: bold;'>{event["title"]}</div>
+                        <div style='opacity: 0.9;'>{time_str}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
 def render_day_calendar(events_df, current_date):
     """Render a single day detailed view"""
@@ -443,8 +469,10 @@ def render_day_calendar(events_df, current_date):
             st.session_state.calendar_date = current_date + timedelta(days=1)
             st.rerun()
     
-    # Day events
-    day_events = events_df[events_df["start"].dt.date == current_date].sort_values("start")
+    # Day events - handle empty DataFrame
+    day_events = pd.DataFrame()
+    if not events_df.empty:
+        day_events = events_df[events_df["start"].dt.date == current_date].sort_values("start")
     
     if not day_events.empty:
         for _, event in day_events.iterrows():
@@ -496,6 +524,10 @@ if "journal_df" not in st.session_state:
 if "portfolio_df" not in st.session_state:
     st.session_state.portfolio_df = load_portfolio()
 
+# Initialize calendar date if not exists
+if "calendar_date" not in st.session_state:
+    st.session_state.calendar_date = date.today()
+
 # Tabs
 tab_calendar, tab_portfolio, tab_journal, tab_studio, tab_comm, tab_public, tab_all = st.tabs([
     "📅 Calendar", "🏺 Portfolio", "📓 Journal", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events",
@@ -515,10 +547,6 @@ with tab_calendar:
         )
     
     with calendar_col2:
-        # Initialize calendar date if not exists
-        if "calendar_date" not in st.session_state:
-            st.session_state.calendar_date = date.today()
-        
         # Date picker for quick navigation
         selected_date = st.date_input("Jump to date", value=st.session_state.calendar_date)
         if selected_date != st.session_state.calendar_date:
