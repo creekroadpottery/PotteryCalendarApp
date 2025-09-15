@@ -1011,8 +1011,8 @@ with tab_calendar:
 
 # ---------- Time Tracker Tab ----------
 with tab_tracker:
-    section_header("⏱️ Time Reality Check")
-    st.markdown("*Where does your finite time actually go?*")
+    section_header("⏱️ Where Does My Time Go?")
+    st.markdown("*Curious about your daily time patterns?*")
     
     # Current timer status
     col1, col2, col3 = st.columns([2, 1, 1])
@@ -1089,10 +1089,10 @@ with tab_tracker:
                 manual_end = st.time_input("End Time", value=time(10, 0))
                 manual_notes = st.text_input("Notes", placeholder="What did you accomplish?")
             
-            # Viktor Frankl reflection for time entries
+            # Quick reflection for time entries
             frankl_time_reflection = st.text_area(
-                "If you were living this time block again, would you spend it the same way?",
-                placeholder="Was this time aligned with my values? Did it serve my bigger purpose?",
+                "Looking back, how do you feel about how you spent this time?",
+                placeholder="Was this time well spent? Would you do it differently next time?",
                 height=60
             )
             
@@ -1134,12 +1134,17 @@ with tab_tracker:
     
     # Today's time breakdown
     st.markdown("---")
-    section_header("📊 Today's Reality Check")
+    section_header("📊 Today's Breakdown")
     
     if not st.session_state.timetrack_df.empty:
-        today_data = st.session_state.timetrack_df[
-            st.session_state.timetrack_df["date"].dt.date == date.today()
-        ]
+        # Ensure proper date handling
+        timetrack_df = st.session_state.timetrack_df.copy()
+        if not timetrack_df["date"].empty:
+            today_data = timetrack_df[
+                pd.to_datetime(timetrack_df["date"]).dt.date == date.today()
+            ]
+        else:
+            today_data = pd.DataFrame()
         
         if not today_data.empty:
             # Calculate time by category for today
@@ -1171,7 +1176,7 @@ with tab_tracker:
                 st.caption(f"Untracked time: {24 - (total_tracked/60):.1f} hours")
             
             with summary_col2:
-                st.markdown("**The Hard Truth:**")
+                st.markdown("**The Numbers Don't Lie:**")
                 
                 # Reality check calculations
                 studio_time = today_summary.get("🏺 Studio Work", 0) + today_summary.get("🎨 Creative Planning", 0)
@@ -1180,7 +1185,7 @@ with tab_tracker:
                 if studio_time > 0:
                     st.success(f"🏺 **{studio_time/60:.1f} hours** on pottery/creative work")
                 else:
-                    st.error("🏺 **0 hours** on pottery today")
+                    st.info("🏺 **0 hours** on pottery today")
                 
                 if distraction_time > 0:
                     st.warning(f"📱 **{distraction_time/60:.1f} hours** on social media/entertainment")
@@ -1188,33 +1193,38 @@ with tab_tracker:
                     if studio_time > 0:
                         ratio = distraction_time / studio_time
                         if ratio > 2:
-                            st.error(f"⚠️ You spent {ratio:.1f}x more time on distractions than pottery!")
+                            st.error(f"📊 Distractions won {ratio:.1f} to 1 today")
                         elif ratio > 1:
-                            st.warning(f"📊 Distractions outweighed pottery {ratio:.1f}:1")
+                            st.warning(f"📊 Distractions ahead {ratio:.1f}:1")
                         else:
-                            st.info(f"💪 Pottery time exceeded distractions!")
+                            st.success(f"💪 Pottery time wins!")
                 
-                # Viktor Frankl reality check
+                # Gentle Frankl nudge (way less preachy)
                 if studio_time < 60:  # Less than 1 hour
                     st.markdown("---")
-                    st.markdown("**🤔 Frankl's Question:**")
-                    st.markdown("*If you knew this was your last day, would you spend less than an hour on what matters most to you?*")
+                    st.markdown("**🤔 Just wondering:**")
+                    st.markdown("*If this day repeated, would you want more studio time?*")
         else:
-            st.info("⏱️ No time tracked today. Start logging to see your reality!")
+            st.info("⏱️ No time tracked today yet. Hit start on a timer above!")
     else:
-        st.info("⏱️ No time data yet. Start tracking to discover where your precious hours go!")
+        st.info("⏱️ No time data yet. Ready to see where your hours actually go?")
     
     # Weekly summary
     if not st.session_state.timetrack_df.empty:
         st.markdown("---")
         section_header("📈 This Week's Pattern")
         
-        # Get this week's data
+        # Get this week's data - safer date handling
         week_start = date.today() - timedelta(days=date.today().weekday())
-        week_data = st.session_state.timetrack_df[
-            (st.session_state.timetrack_df["date"].dt.date >= week_start) & 
-            (st.session_state.timetrack_df["date"].dt.date <= date.today())
-        ]
+        timetrack_df = st.session_state.timetrack_df.copy()
+        
+        if not timetrack_df["date"].empty:
+            week_data = timetrack_df[
+                (pd.to_datetime(timetrack_df["date"]).dt.date >= week_start) & 
+                (pd.to_datetime(timetrack_df["date"]).dt.date <= date.today())
+            ]
+        else:
+            week_data = pd.DataFrame()
         
         if not week_data.empty:
             week_summary = week_data.groupby("category")["duration_minutes"].sum().sort_values(ascending=False)
@@ -1230,7 +1240,7 @@ with tab_tracker:
             with week_col2:
                 # Weekly insights
                 studio_weekly = week_summary.get("🏺 Studio Work", 0) + week_summary.get("🎨 Creative Planning", 0)
-                days_tracked = len(week_data["date"].dt.date.unique())
+                days_tracked = len(pd.to_datetime(week_data["date"]).dt.date.unique())
                 
                 st.markdown("**Weekly Insights:**")
                 st.metric("🏺 Studio Hours This Week", f"{studio_weekly/60:.1f}")
@@ -1240,9 +1250,11 @@ with tab_tracker:
                     avg_daily = studio_weekly / 7
                     st.caption(f"Average: {avg_daily/60:.1f} hours/day on pottery")
                 
-                # Week reality check
+                # Gentler weekly insight
                 if studio_weekly < 420:  # Less than 7 hours per week
-                    st.warning("⚠️ Less than 1 hour/day average on pottery this week")
+                    st.info("💡 Less than 1 hour/day average on pottery this week")
+        else:
+            st.info("📊 Start tracking to see weekly patterns!")
     
     # Export time tracking data
     if not st.session_state.timetrack_df.empty:
