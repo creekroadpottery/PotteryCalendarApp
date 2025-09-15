@@ -872,7 +872,7 @@ with tab_calendar:
             else:
                 start_dt = datetime.combine(start_date, start_time)
                 if all_day:
-                    end_dt = datetime.combine(end_date, time(23, 59))
+                    end_dt = datetime.combine(end_date, dt_time(23, 59))
                 else:
                     end_dt = datetime.combine(end_date, end_time)
 
