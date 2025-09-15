@@ -17,6 +17,7 @@ APP_TITLE = "Pottery Maker Manager"
 EVENTS_PATH = "data/events.csv"
 JOURNAL_PATH = "data/journal_entries.csv"
 PORTFOLIO_PATH = "data/finished_works.csv"
+GOALS_PATH = "data/goals.csv"
 IMAGES_DIR = "data/images"
 
 # Ensure directories exist
@@ -151,6 +152,23 @@ def load_portfolio(path: str = PORTFOLIO_PATH) -> pd.DataFrame:
         df["refire_date"] = pd.to_datetime(df["refire_date"])
         return df
 
+@st.cache_data  
+def load_goals(path: str = GOALS_PATH) -> pd.DataFrame:
+    try:
+        df = pd.read_csv(path, parse_dates=["created_date", "target_date", "completed_date"], keep_default_na=False)
+        return df
+    except FileNotFoundError:
+        df = pd.DataFrame(columns=[
+            "id", "title", "description", "category", "status", "priority", 
+            "created_date", "target_date", "completed_date", "progress_notes",
+            "frankl_why", "time_awareness_note", "linked_pieces", "tags"
+        ])
+        # Ensure proper datetime types
+        df["created_date"] = pd.to_datetime(df["created_date"])
+        df["target_date"] = pd.to_datetime(df["target_date"])
+        df["completed_date"] = pd.to_datetime(df["completed_date"])
+        return df
+
 def save_data(df: pd.DataFrame, path: str):
     df.to_csv(path, index=False)
     # Clear relevant cache
@@ -160,6 +178,8 @@ def save_data(df: pd.DataFrame, path: str):
         load_journal.clear()
     elif "portfolio" in path:
         load_portfolio.clear()
+    elif "goals" in path:
+        load_goals.clear()
 
 def expand_recurrence(base_event: dict, freq_name: str, count: int | None, until: date | None):
     rule = RECURRENCE_MAP.get(freq_name)
@@ -706,14 +726,16 @@ if "journal_df" not in st.session_state:
     st.session_state.journal_df = load_journal()
 if "portfolio_df" not in st.session_state:
     st.session_state.portfolio_df = load_portfolio()
+if "goals_df" not in st.session_state:
+    st.session_state.goals_df = load_goals()
 
 # Initialize calendar date if not exists
 if "calendar_date" not in st.session_state:
     st.session_state.calendar_date = date.today()
 
 # Tabs
-tab_calendar, tab_portfolio, tab_journal, tab_studio, tab_comm, tab_public, tab_all = st.tabs([
-    "📅 Calendar", "🏺 Portfolio", "📓 Journal", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events",
+tab_calendar, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all = st.tabs([
+    "📅 Calendar", "🎯 Goals", "🏺 Portfolio", "📓 Journal", "🔍 Search", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events",
 ])
 
 # ---------- Calendar Tab (Add Event) ----------
@@ -839,6 +861,276 @@ with tab_calendar:
                 # Clear quick add state
                 if hasattr(st.session_state, 'show_quick_add'):
                     st.session_state.show_quick_add = False
+    
+    # Event management section
+    st.markdown("---")
+    section_header("⚙️ Manage Existing Events")
+    
+    if not st.session_state.events_df.empty:
+        # Show recent events for editing
+        recent_events = st.session_state.events_df.sort_values("start", ascending=False).head(20)
+        
+        edit_col1, edit_col2 = st.columns([2, 1])
+        with edit_col1:
+            selected_event_options = [f"{row['title']} - {row['start'].strftime('%m/%d %I:%M %p')}" for _, row in recent_events.iterrows()]
+            selected_event_display = st.selectbox("Select Event to Edit/Delete", ["None"] + selected_event_options)
+        
+        if selected_event_display != "None":
+            event_index = selected_event_options.index(selected_event_display)
+            selected_event = recent_events.iloc[event_index]
+            
+            with edit_col2:
+                action_col1, action_col2 = st.columns(2)
+                with action_col1:
+                    edit_event = st.button("✏️ Edit", key="edit_selected_event")
+                with action_col2:
+                    delete_event = st.button("🗑️ Delete", key="delete_selected_event", type="secondary")
+            
+            # Delete confirmation
+            if delete_event:
+                st.error("⚠️ Confirm deletion:")
+                confirm_col1, confirm_col2 = st.columns(2)
+                with confirm_col1:
+                    if st.button("✅ Yes, Delete", key="confirm_delete", type="primary"):
+                        # Remove event from dataframe
+                        st.session_state.events_df = st.session_state.events_df[
+                            st.session_state.events_df["id"] != selected_event["id"]
+                        ]
+                        save_data(st.session_state.events_df, EVENTS_PATH)
+                        st.success("🗑️ Event deleted!")
+                        st.rerun()
+                with confirm_col2:
+                    if st.button("❌ Cancel", key="cancel_delete"):
+                        st.rerun()
+            
+            # Edit form
+            if edit_event or st.session_state.get("editing_event", False):
+                st.session_state.editing_event = True
+                
+                with st.form("edit_event_form"):
+                    st.markdown(f"**Editing: {selected_event['title']}**")
+                    
+                    edit_col1, edit_col2 = st.columns([2, 1])
+                    with edit_col1:
+                        edit_title = st.text_input("Title", value=selected_event['title'])
+                        edit_category = st.selectbox("Category", CATEGORY_OPTIONS, index=CATEGORY_OPTIONS.index(selected_event['category']))
+                        edit_task_type = st.selectbox("Task Type", TASK_OPTIONS, index=TASK_OPTIONS.index(selected_event['task_type']) if selected_event['task_type'] in TASK_OPTIONS else 0)
+                        edit_location = st.text_input("Location", value=selected_event.get('location', ''))
+                    
+                    with edit_col2:
+                        edit_all_day = st.checkbox("All day event", value=bool(selected_event['all_day']))
+                        
+                        # Parse existing dates/times
+                        original_start = pd.to_datetime(selected_event['start'])
+                        original_end = pd.to_datetime(selected_event['end'])
+                        
+                        edit_start_date = st.date_input("Start date", value=original_start.date())
+                        if not edit_all_day:
+                            edit_start_time = st.time_input("Start time", value=original_start.time())
+                            edit_end_date = st.date_input("End date", value=original_end.date())
+                            edit_end_time = st.time_input("End time", value=original_end.time())
+                        else:
+                            edit_start_time = time(9, 0)
+                            edit_end_date = st.date_input("End date", value=original_end.date())
+                            edit_end_time = time(17, 0)
+                    
+                    edit_notes = st.text_area("Notes", value=selected_event.get('notes', ''))
+                    
+                    form_col1, form_col2 = st.columns(2)
+                    with form_col1:
+                        update_event = st.form_submit_button("💾 Update Event", type="primary")
+                    with form_col2:
+                        cancel_edit = st.form_submit_button("❌ Cancel")
+                    
+                    if update_event:
+                        # Update the event
+                        start_dt = datetime.combine(edit_start_date, edit_start_time)
+                        if edit_all_day:
+                            end_dt = datetime.combine(edit_end_date, time(23, 59))
+                        else:
+                            end_dt = datetime.combine(edit_end_date, edit_end_time)
+                        
+                        # Find and update the event in the dataframe
+                        event_idx = st.session_state.events_df.index[st.session_state.events_df["id"] == selected_event["id"]][0]
+                        st.session_state.events_df.loc[event_idx, "title"] = edit_title
+                        st.session_state.events_df.loc[event_idx, "category"] = edit_category
+                        st.session_state.events_df.loc[event_idx, "task_type"] = edit_task_type
+                        st.session_state.events_df.loc[event_idx, "start"] = start_dt
+                        st.session_state.events_df.loc[event_idx, "end"] = end_dt
+                        st.session_state.events_df.loc[event_idx, "all_day"] = edit_all_day
+                        st.session_state.events_df.loc[event_idx, "location"] = edit_location
+                        st.session_state.events_df.loc[event_idx, "notes"] = edit_notes
+                        st.session_state.events_df.loc[event_idx, "updated_at"] = _now_tzless()
+                        
+                        save_data(st.session_state.events_df, EVENTS_PATH)
+                        st.session_state.editing_event = False
+                        st.success("✏️ Event updated!")
+                        st.rerun()
+                    
+                    if cancel_edit:
+                        st.session_state.editing_event = False
+                        st.rerun()
+    else:
+        st.info("📅 No events to manage yet. Create your first event above!")
+
+# ---------- Goals Tab ----------
+with tab_goals:
+    section_header("🎯 Intentional Goals")
+    st.markdown("*Transform procrastination into purposeful action*")
+    
+    # Add new goal
+    with st.expander("➕ Create New Goal", expanded=False):
+        with st.form("add_goal_form"):
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                goal_title = st.text_input("Goal Title", placeholder="Master pulling handles")
+                goal_description = st.text_area("Description", placeholder="What specifically do you want to achieve?", height=100)
+                
+                # Goal category
+                goal_category = st.selectbox("Category", [
+                    "Technical Skill", "Artistic Development", "Business Growth", 
+                    "Studio Efficiency", "Personal Growth", "Community Engagement"
+                ])
+                
+                # Tags for searchability
+                goal_tags = st.text_input("Tags (comma-separated)", placeholder="handles, mugs, technique, practice")
+                
+            with col2:
+                goal_priority = st.selectbox("Priority", ["🔴 High", "🟡 Medium", "🟢 Low"])
+                target_date = st.date_input("Target Date", value=date.today() + timedelta(days=30))
+                
+            # Viktor Frankl integration
+            st.markdown("### 🤔 The Deeper Why")
+            frankl_why = st.text_area(
+                "Why does this goal matter? What meaning will achieving it bring to your life?",
+                placeholder="How does this goal connect to your larger purpose? What change will it make in the world?",
+                height=80
+            )
+            
+            time_awareness_note = st.text_area(
+                "How does your finite time influence this goal's importance?",
+                placeholder="Given your remaining days, why prioritize this over other possibilities?",
+                height=60
+            )
+            
+            submitted_goal = st.form_submit_button("Create Goal")
+            
+            if submitted_goal and goal_title.strip():
+                new_goal = {
+                    "id": generate_id(),
+                    "title": goal_title.strip(),
+                    "description": goal_description.strip(),
+                    "category": goal_category,
+                    "status": "Active",
+                    "priority": goal_priority,
+                    "created_date": date.today(),
+                    "target_date": target_date,
+                    "completed_date": None,
+                    "progress_notes": "",
+                    "frankl_why": frankl_why.strip(),
+                    "time_awareness_note": time_awareness_note.strip(),
+                    "linked_pieces": "",
+                    "tags": goal_tags.strip()
+                }
+                
+                st.session_state.goals_df = pd.concat([
+                    st.session_state.goals_df,
+                    pd.DataFrame([new_goal])
+                ], ignore_index=True)
+                save_data(st.session_state.goals_df, GOALS_PATH)
+                st.success("🎯 Goal created!")
+                st.rerun()
+    
+    # Display goals
+    goals_df = st.session_state.goals_df.sort_values("created_date", ascending=False)
+    
+    if not goals_df.empty:
+        # Goal filters
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            status_filter = st.multiselect("Status", ["Active", "Completed", "On Hold"], default=["Active"])
+        with col2:
+            category_filter = st.multiselect("Category", goals_df["category"].unique().tolist())
+        with col3:
+            priority_filter = st.multiselect("Priority", ["🔴 High", "🟡 Medium", "🟢 Low"])
+        
+        # Apply filters
+        filtered_goals = goals_df.copy()
+        if status_filter:
+            filtered_goals = filtered_goals[filtered_goals["status"].isin(status_filter)]
+        if category_filter:
+            filtered_goals = filtered_goals[filtered_goals["category"].isin(category_filter)]
+        if priority_filter:
+            filtered_goals = filtered_goals[filtered_goals["priority"].isin(priority_filter)]
+            
+        # Display goals
+        for _, goal in filtered_goals.iterrows():
+            with st.container(border=True):
+                col1, col2 = st.columns([3, 1])
+                
+                with col1:
+                    st.markdown(f"**{goal['title']}** {goal['priority']}")
+                    st.markdown(goal["description"])
+                    
+                    if goal.get("frankl_why") and goal["frankl_why"].strip():
+                        st.markdown("**Why it matters:**")
+                        st.markdown(f"*{goal['frankl_why']}*")
+                    
+                    if goal.get("target_date") and pd.notna(goal["target_date"]):
+                        days_remaining = (goal["target_date"].date() - date.today()).days
+                        if days_remaining > 0:
+                            st.caption(f"🗓️ Target: {goal['target_date'].strftime('%Y-%m-%d')} ({days_remaining} days remaining)")
+                        elif days_remaining == 0:
+                            st.caption("🎯 **Due TODAY!**")
+                        else:
+                            st.caption(f"⚠️ Overdue by {abs(days_remaining)} days")
+                    
+                    if goal.get("tags") and goal["tags"].strip():
+                        tags_list = [tag.strip() for tag in goal["tags"].split(",") if tag.strip()]
+                        st.caption("🏷️ " + " • ".join(tags_list))
+                
+                with col2:
+                    st.caption(f"**{goal['category']}**")
+                    st.caption(f"Status: {goal['status']}")
+                    
+                    # Quick actions
+                    if goal["status"] != "Completed":
+                        if st.button("✅ Mark Complete", key=f"complete_{goal['id']}"):
+                            # Update goal status
+                            idx = st.session_state.goals_df.index[st.session_state.goals_df["id"] == goal["id"]][0]
+                            st.session_state.goals_df.loc[idx, "status"] = "Completed"
+                            st.session_state.goals_df.loc[idx, "completed_date"] = date.today()
+                            save_data(st.session_state.goals_df, GOALS_PATH)
+                            st.success("🎉 Goal completed!")
+                            st.rerun()
+                    
+                    if st.button("📝 Add Progress", key=f"progress_{goal['id']}"):
+                        st.session_state[f"show_progress_{goal['id']}"] = True
+                
+                # Progress note form (conditional)
+                if st.session_state.get(f"show_progress_{goal['id']}", False):
+                    with st.form(f"progress_form_{goal['id']}"):
+                        progress_note = st.text_area("Progress Note", placeholder="What progress have you made toward this goal?")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.form_submit_button("Add Note"):
+                                # Update goal with progress note
+                                idx = st.session_state.goals_df.index[st.session_state.goals_df["id"] == goal["id"]][0]
+                                existing_notes = st.session_state.goals_df.loc[idx, "progress_notes"]
+                                new_notes = f"{existing_notes}\n\n{date.today()}: {progress_note}".strip()
+                                st.session_state.goals_df.loc[idx, "progress_notes"] = new_notes
+                                save_data(st.session_state.goals_df, GOALS_PATH)
+                                st.session_state[f"show_progress_{goal['id']}"] = False
+                                st.success("Progress noted!")
+                                st.rerun()
+                        with col2:
+                            if st.form_submit_button("Cancel"):
+                                st.session_state[f"show_progress_{goal['id']}"] = False
+                                st.rerun()
+    else:
+        st.info("🎯 No goals yet. Create your first intentional goal above!")
+        st.markdown("**Remember:** Goals without deadlines are just wishes. Goals with deep 'why' become reality.")
 
 # ---------- Portfolio Tab ----------
 with tab_portfolio:
