@@ -771,7 +771,7 @@ if "calendar_date" not in st.session_state:
     st.session_state.calendar_date = date.today()
 
 # Tabs
-tab_calendar, tab_tracker, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all, tab_about = st.tabs([
+    tab_calendar, tab_tracker, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all, tab_about = st.tabs([
     "📅 Calendar", "⏱️ Time Tracker", "🎯 Goals", "🏺 Portfolio", "📓 Journal", "🔍 Search", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events",, "ℹ️ About"])
 
 # ---------- Calendar Tab (Add Event) ----------
