@@ -771,8 +771,8 @@ if "calendar_date" not in st.session_state:
     st.session_state.calendar_date = date.today()
 
 # Tabs
-tab_calendar, tab_tracker, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all, tab_about = st.tabs([
-    "📅 Calendar", "⏱️ Time Tracker", "🎯 Goals", "🏺 Portfolio", "📓 Journal", "🔍 Search", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events", "ℹ️ About"
+tab_calendar, tab_tracker, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all = st.tabs([
+    "📅 Calendar", "⏱️ Time Tracker", "🎯 Goals", "🏺 Portfolio", "📓 Journal", "🔍 Search", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events",
 ])
 
 # ---------- Calendar Tab (Add Event) ----------
@@ -1019,6 +1019,38 @@ with tab_tracker:
     if st.session_state.timer_running:
         # Create a dramatic live timer display
         timer_container = st.empty()
+        # Always-visible Stop button near the live clock
+        stop_top = st.button("⏹️ Stop Timer", key="stop_timer_top", type="secondary")
+        if stop_top:
+            end_time = datetime.now()
+            duration = end_time - st.session_state.timer_start
+            duration_minutes = duration.total_seconds() / 60
+
+            new_entry = {
+                "id": generate_id(),
+                "category": st.session_state.timer_category,
+                "activity": st.session_state.timer_category,
+                "start_time": st.session_state.timer_start,
+                "end_time": end_time,
+                "duration_minutes": duration_minutes,
+                "notes": "",
+                "date": date.today(),
+                "frankl_reflection": ""
+            }
+            st.session_state.timetrack_df = pd.concat(
+                [st.session_state.timetrack_df, pd.DataFrame([new_entry])],
+                ignore_index=True,
+            )
+            save_data(st.session_state.timetrack_df, TIMETRACK_PATH)
+
+            # Reset timer state
+            st.session_state.timer_running = False
+            st.session_state.timer_start = None
+            st.session_state.timer_category = None
+
+            st.success(f"Logged {duration_minutes:.1f} minutes")
+            st.rerun()
+
         
         elapsed = datetime.now() - st.session_state.timer_start
         elapsed_seconds = int(elapsed.total_seconds())
@@ -1859,6 +1891,32 @@ with tab_journal:
             file_name=f"pottery_journal_{date.today().isoformat()}.csv",
             mime="text/csv"
         )
+# ---------- Search Tab ----------
+with tab_search:
+    section_header("Search")
+    q = st.text_input("Search term", placeholder="mug, shino, Cone 6, Harford Fair, goal title")
+    scope = st.multiselect(
+        "Search areas",
+        ["Events", "Journal", "Portfolio", "Goals"],
+        default=["Events", "Journal", "Portfolio", "Goals"],
+    )
+
+    if q.strip():
+        st.markdown(f"**Results for:** {q}")
+
+        # Events
+        if "Events" in scope:
+            st.markdown("#### Events")
+            _df = st.session_state.events_df.copy()
+            if not _df.empty:
+                mask = _df.astype(str).apply(lambda c: c.str.contains(q, case=False, na=False)).any(axis=1)
+                hits = _df[mask].sort_values("start")
+                if not hits.empty:
+                    render_agenda(hits)
+                else:
+                    st.caption("No events found")
+            else:
+                st.caption("No events yet")
 
 # Studio Tab
 with tab_studio:
