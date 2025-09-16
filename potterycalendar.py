@@ -1,4 +1,4 @@
-# Pottery Maker Manager — Complete Prototype
+# Pottery Maker Manager â€” Complete Prototype
 # Enhanced with Portfolio Management and Studio Journal
 # Run with: streamlit run pottery_maker_manager.py
 
@@ -15,7 +15,6 @@ from PIL import Image
 import io
 
 APP_TITLE = "Pottery Maker Manager"
-APP_VERSION = "1.0.0"
 EVENTS_PATH = "data/events.csv"
 JOURNAL_PATH = "data/journal_entries.csv"
 PORTFOLIO_PATH = "data/finished_works.csv"
@@ -46,10 +45,10 @@ GLAZE_TYPES = [
 ]
 
 TIME_CATEGORIES = [
-    "🏺 Studio Work", "🎨 Creative Planning", "📚 Learning/Research", 
-    "💼 Business/Admin", "🍽️ Meals", "😴 Sleep", "🚿 Personal Care",
-    "🏃‍♀️ Exercise", "👥 Social", "📱 Social Media", "📺 Entertainment",
-    "🛒 Errands", "🧹 Household", "🚗 Travel", "💭 Other"
+    "ðŸº Studio Work", "ðŸŽ¨ Creative Planning", "ðŸ“š Learning/Research", 
+    "ðŸ’¼ Business/Admin", "ðŸ½ï¸ Meals", "ðŸ˜´ Sleep", "ðŸš¿ Personal Care",
+    "ðŸƒâ€â™€ï¸ Exercise", "ðŸ‘¥ Social", "ðŸ“± Social Media", "ðŸ“º Entertainment",
+    "ðŸ›’ Errands", "ðŸ§¹ Household", "ðŸš— Travel", "ðŸ’­ Other"
 ]
 
 RECURRENCE_MAP = {
@@ -272,13 +271,13 @@ def render_portfolio_piece(piece_row, show_full=False):
                 if img:
                     st.image(img, use_container_width=True)
                 else:
-                    st.info("🏺 Image not found")
+                    st.info("ðŸº Image not found")
             else:
-                st.info("🏺 No image")
+                st.info("ðŸº No image")
         
         with col2:
             st.markdown(f"**{piece_row['title']}**")
-            st.caption(f"{piece_row['piece_type']} • Completed: {piece_row['completion_date'].strftime('%Y-%m-%d') if pd.notna(piece_row['completion_date']) else 'Unknown'}")
+            st.caption(f"{piece_row['piece_type']} â€¢ Completed: {piece_row['completion_date'].strftime('%Y-%m-%d') if pd.notna(piece_row['completion_date']) else 'Unknown'}")
             
             if show_full:
                 # The Big Questions
@@ -307,7 +306,7 @@ def render_portfolio_piece(piece_row, show_full=False):
                     if piece_row.get("personal_satisfaction"):
                         ratings.append(f"Satisfaction: {piece_row['personal_satisfaction']}/5")
                     if ratings:
-                        st.caption("⭐ " + " • ".join(ratings))
+                        st.caption("â­ " + " â€¢ ".join(ratings))
                 
                 # Design elements achieved (show checked ones)
                 achieved_elements = []
@@ -316,7 +315,7 @@ def render_portfolio_piece(piece_row, show_full=False):
                     if piece_row.get(element) == True:
                         achieved_elements.append(element.replace("_", " ").title())
                 if achieved_elements:
-                    st.caption(f"✨ Achieved: {', '.join(achieved_elements[:4])}{'...' if len(achieved_elements) > 4 else ''}")
+                    st.caption(f"âœ¨ Achieved: {', '.join(achieved_elements[:4])}{'...' if len(achieved_elements) > 4 else ''}")
                     
                 # Reflections
                 if piece_row.get("observations"):
@@ -329,12 +328,12 @@ def render_portfolio_piece(piece_row, show_full=False):
                 if piece_row.get("glaze_combo"):
                     details.append(piece_row["glaze_combo"])
                 if details:
-                    st.caption(" • ".join(details))
+                    st.caption(" â€¢ ".join(details))
                 
                 # Show ratings in compact view
                 if pd.notna(piece_row.get("personal_satisfaction")) and piece_row.get("personal_satisfaction") > 0:
                     satisfaction = piece_row.get("personal_satisfaction", 0)
-                    stars = "⭐" * int(satisfaction)
+                    stars = "â­" * int(satisfaction)
                     st.caption(f"Satisfaction: {stars} ({satisfaction}/5)")
 
 # ---------- Calendar View Functions ----------
@@ -361,7 +360,7 @@ def render_month_calendar(events_df, current_date):
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col1:
-        if st.button("◀ Previous", key="prev_month"):
+        if st.button("â—€ Previous", key="prev_month"):
             if month == 1:
                 st.session_state.calendar_date = date(year - 1, 12, 1)
             else:
@@ -372,7 +371,7 @@ def render_month_calendar(events_df, current_date):
         st.markdown(f"<h3 style='text-align: center; margin: 0;'>{month_name}</h3>", unsafe_allow_html=True)
     
     with col3:
-        if st.button("Next ▶", key="next_month"):
+        if st.button("Next â–¶", key="next_month"):
             if month == 12:
                 st.session_state.calendar_date = date(year + 1, 1, 1)
             else:
@@ -451,7 +450,7 @@ def render_week_calendar(events_df, current_date):
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col1:
-        if st.button("◀ Previous Week", key="prev_week"):
+        if st.button("â—€ Previous Week", key="prev_week"):
             st.session_state.calendar_date = current_date - timedelta(days=7)
             st.rerun()
     
@@ -460,7 +459,7 @@ def render_week_calendar(events_df, current_date):
         st.markdown(f"<h3 style='text-align: center; margin: 0;'>{week_range}</h3>", unsafe_allow_html=True)
     
     with col3:
-        if st.button("Next Week ▶", key="next_week"):
+        if st.button("Next Week â–¶", key="next_week"):
             st.session_state.calendar_date = current_date + timedelta(days=7)
             st.rerun()
     
@@ -505,7 +504,7 @@ def render_day_calendar(events_df, current_date):
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col1:
-        if st.button("◀ Previous Day", key="prev_day"):
+        if st.button("â—€ Previous Day", key="prev_day"):
             st.session_state.calendar_date = current_date - timedelta(days=1)
             st.rerun()
     
@@ -514,7 +513,7 @@ def render_day_calendar(events_df, current_date):
         st.markdown(f"<h3 style='text-align: center; margin: 0;'>{day_name}</h3>", unsafe_allow_html=True)
     
     with col3:
-        if st.button("Next Day ▶", key="next_day"):
+        if st.button("Next Day â–¶", key="next_day"):
             st.session_state.calendar_date = current_date + timedelta(days=1)
             st.rerun()
     
@@ -531,19 +530,19 @@ def render_day_calendar(events_df, current_date):
                 with col1:
                     st.markdown(f"**{event['title']}**")
                     time_str = "All day" if event["all_day"] else f"{event['start'].strftime('%I:%M %p')} - {event['end'].strftime('%I:%M %p')}"
-                    st.caption(f"{event['category']} • {event['task_type']} • {time_str}")
+                    st.caption(f"{event['category']} â€¢ {event['task_type']} â€¢ {time_str}")
                     if event.get("location"):
-                        st.caption(f"📍 {event['location']}")
+                        st.caption(f"ðŸ“ {event['location']}")
                     if event.get("notes"):
                         st.write(event["notes"])
                 with col2:
                     badge(event["category"], color)
     else:
         st.info("No events scheduled for this day")
-        st.markdown("Perfect time for some studio work! 🏺")
+        st.markdown("Perfect time for some studio work! ðŸº")
         
         # Quick add event for this day
-        if st.button("➕ Add Event for This Day", key="quick_add_day"):
+        if st.button("âž• Add Event for This Day", key="quick_add_day"):
             st.session_state.quick_add_date = current_date
             st.session_state.show_quick_add = True
 
@@ -555,7 +554,7 @@ def render_year_calendar(events_df, current_date):
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col1:
-        if st.button("◀ Previous Year", key="prev_year"):
+        if st.button("â—€ Previous Year", key="prev_year"):
             st.session_state.calendar_date = date(year - 1, current_date.month, 1)
             st.rerun()
     
@@ -563,7 +562,7 @@ def render_year_calendar(events_df, current_date):
         st.markdown(f"<h3 style='text-align: center; margin: 0;'>{year}</h3>", unsafe_allow_html=True)
     
     with col3:
-        if st.button("Next Year ▶", key="next_year"):
+        if st.button("Next Year â–¶", key="next_year"):
             st.session_state.calendar_date = date(year + 1, current_date.month, 1)
             st.rerun()
     
@@ -703,9 +702,9 @@ def render_agenda(df: pd.DataFrame):
                 with c1:
                     st.markdown(f"**{row['title']}**")
                     when = "All day" if row["all_day"] else f"{row['start'].strftime('%I:%M %p')} to {row['end'].strftime('%I:%M %p')}"
-                    st.caption(f"{row['category']} • {row['task_type']} • {when}")
+                    st.caption(f"{row['category']} â€¢ {row['task_type']} â€¢ {when}")
                     if row.get("location"):
-                        st.caption(f"📍 {row['location']}")
+                        st.caption(f"ðŸ“ {row['location']}")
                     if row.get("notes"):
                         st.write(row["notes"]) 
                 with c2:
@@ -717,11 +716,11 @@ st.set_page_config(page_title=APP_TITLE, layout="wide")
 st.title(APP_TITLE)
 
 with st.sidebar:
-    st.subheader("🏺 Creek Road Pottery")
+    st.subheader("ðŸº Creek Road Pottery")
     st.markdown("*Complete maker management*")
     
     # Time Scarcity Awareness
-    with st.expander("⏰ Time Awareness", expanded=False):
+    with st.expander("â° Time Awareness", expanded=False):
         st.markdown("**Living with Intention**")
         birth_year = st.number_input("Birth Year (optional)", min_value=1920, max_value=2010, value=1980, help="For time awareness calculation")
         if birth_year:
@@ -731,11 +730,11 @@ with st.sidebar:
             
             if remaining_days > 0:
                 st.markdown(f"**If you live to 90, you may have roughly:**")
-                st.markdown(f"🗓️ **{remaining_days:,} days** remaining")
-                st.markdown(f"📅 **{remaining_years} years** remaining")
+                st.markdown(f"ðŸ—“ï¸ **{remaining_days:,} days** remaining")
+                st.markdown(f"ðŸ“… **{remaining_years} years** remaining")
                 st.caption("Each day in the studio matters.")
             else:
-                st.markdown("🎉 **Every day is bonus time!**")
+                st.markdown("ðŸŽ‰ **Every day is bonus time!**")
                 st.caption("You've exceeded the 90-year mark - what a gift!")
     
     st.subheader("Quick Filters")
@@ -772,8 +771,8 @@ if "calendar_date" not in st.session_state:
     st.session_state.calendar_date = date.today()
 
 # Tabs
-tab_calendar, tab_tracker, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all, tab_about = st.tabs([
-    "📅 Calendar", "⏱️ Time Tracker", "🎯 Goals", "🏺 Portfolio", "📝 Journal", "🔍 Search", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events", "ℹ️ About",
+tab_calendar, tab_tracker, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all = st.tabs([
+    "ðŸ“… Calendar", "â±ï¸ Time Tracker", "ðŸŽ¯ Goals", "ðŸº Portfolio", "ðŸ““ Journal", "ðŸ” Search", "ðŸŽ¨ Studio", "ðŸ¤ Community", "ðŸŒ Public", "ðŸ“‹ All Events",
 ])
 
 # ---------- Calendar Tab (Add Event) ----------
@@ -805,30 +804,30 @@ with tab_calendar:
     
     # Display calendar based on selected view
     if calendar_view == "Month":
-        section_header("📅 Month View")
+        section_header("ðŸ“… Month View")
         render_month_calendar(st.session_state.events_df, st.session_state.calendar_date)
         
     elif calendar_view == "Week":
-        section_header("📅 Week View")
+        section_header("ðŸ“… Week View")
         render_week_calendar(st.session_state.events_df, st.session_state.calendar_date)
         
     elif calendar_view == "Day":
-        section_header("📅 Day View")
+        section_header("ðŸ“… Day View")
         render_day_calendar(st.session_state.events_df, st.session_state.calendar_date)
         
     elif calendar_view == "Year":
-        section_header("📅 Year View")
+        section_header("ðŸ“… Year View")
         render_year_calendar(st.session_state.events_df, st.session_state.calendar_date)
         
     elif calendar_view == "Agenda":
-        section_header("📅 Agenda View")
+        section_header("ðŸ“… Agenda View")
         filtered_events = filter_events_df(st.session_state.events_df)
         render_agenda(filtered_events)
     
     st.markdown("---")
     
     # Add new event form (moved below calendar views)
-    section_header("➕ Schedule Event")
+    section_header("âž• Schedule Event")
     with st.form("add_event_form", clear_on_submit=False):
         c1, c2 = st.columns([2, 1])
         with c1:
@@ -902,7 +901,7 @@ with tab_calendar:
     
     # Event management section
     st.markdown("---")
-    section_header("⚙️ Manage Existing Events")
+    section_header("âš™ï¸ Manage Existing Events")
     
     if not st.session_state.events_df.empty:
         # Show recent events for editing
@@ -920,25 +919,25 @@ with tab_calendar:
             with edit_col2:
                 action_col1, action_col2 = st.columns(2)
                 with action_col1:
-                    edit_event = st.button("✏️ Edit", key="edit_selected_event")
+                    edit_event = st.button("âœï¸ Edit", key="edit_selected_event")
                 with action_col2:
-                    delete_event = st.button("🗑️ Delete", key="delete_selected_event", type="secondary")
+                    delete_event = st.button("ðŸ—‘ï¸ Delete", key="delete_selected_event", type="secondary")
             
             # Delete confirmation
             if delete_event:
-                st.error("⚠️ Confirm deletion:")
+                st.error("âš ï¸ Confirm deletion:")
                 confirm_col1, confirm_col2 = st.columns(2)
                 with confirm_col1:
-                    if st.button("✅ Yes, Delete", key="confirm_delete", type="primary"):
+                    if st.button("âœ… Yes, Delete", key="confirm_delete", type="primary"):
                         # Remove event from dataframe
                         st.session_state.events_df = st.session_state.events_df[
                             st.session_state.events_df["id"] != selected_event["id"]
                         ]
                         save_data(st.session_state.events_df, EVENTS_PATH)
-                        st.success("🗑️ Event deleted!")
+                        st.success("ðŸ—‘ï¸ Event deleted!")
                         st.rerun()
                 with confirm_col2:
-                    if st.button("❌ Cancel", key="cancel_delete"):
+                    if st.button("âŒ Cancel", key="cancel_delete"):
                         st.rerun()
             
             # Edit form
@@ -976,9 +975,9 @@ with tab_calendar:
                     
                     form_col1, form_col2 = st.columns(2)
                     with form_col1:
-                        update_event = st.form_submit_button("💾 Update Event", type="primary")
+                        update_event = st.form_submit_button("ðŸ’¾ Update Event", type="primary")
                     with form_col2:
-                        cancel_edit = st.form_submit_button("❌ Cancel")
+                        cancel_edit = st.form_submit_button("âŒ Cancel")
                     
                     if update_event:
                         # Update the event
@@ -1002,18 +1001,18 @@ with tab_calendar:
                         
                         save_data(st.session_state.events_df, EVENTS_PATH)
                         st.session_state.editing_event = False
-                        st.success("✏️ Event updated!")
+                        st.success("âœï¸ Event updated!")
                         st.rerun()
                     
                     if cancel_edit:
                         st.session_state.editing_event = False
                         st.rerun()
     else:
-        st.info("📅 No events to manage yet. Create your first event above!")
+        st.info("ðŸ“… No events to manage yet. Create your first event above!")
 
 # ---------- Time Tracker Tab ----------
 with tab_tracker:
-    section_header("⏱️ Where Does My Time Go?")
+    section_header("â±ï¸ Where Does My Time Go?")
     st.markdown("*Curious about your daily time patterns?*")
     
     # Current timer status with LIVE CLOCK
@@ -1021,7 +1020,7 @@ with tab_tracker:
         # Create a dramatic live timer display
         timer_container = st.empty()
         # Always-visible Stop button near the live clock
-        stop_top = st.button("⏹️ Stop Timer", key="stop_timer_top", type="secondary")
+        stop_top = st.button("â¹ï¸ Stop Timer", key="stop_timer_top", type="secondary")
         if stop_top:
             end_time = datetime.now()
             duration = end_time - st.session_state.timer_start
@@ -1063,13 +1062,13 @@ with tab_tracker:
         # Color coding based on time elapsed
         if elapsed_minutes < 30:
             timer_color = "#00FF00"  # Green - just started
-            pulse_color = "🟢"
+            pulse_color = "ðŸŸ¢"
         elif elapsed_minutes < 120:  # Less than 2 hours
             timer_color = "#FFA500"  # Orange - getting going
-            pulse_color = "🟡"
+            pulse_color = "ðŸŸ¡"
         else:
             timer_color = "#FF4444"  # Red - long session
-            pulse_color = "🔴"
+            pulse_color = "ðŸ”´"
         
         # Dramatic live clock display
         with timer_container.container():
@@ -1084,7 +1083,7 @@ with tab_tracker:
                 box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             '>
                 <h2 style='color: {timer_color}; margin: 0; font-size: 24px;'>
-                    ⏱️ TIMER ACTIVE: {st.session_state.timer_category}
+                    â±ï¸ TIMER ACTIVE: {st.session_state.timer_category}
                 </h2>
                 <div style='font-size: 48px; font-weight: bold; color: {timer_color}; margin: 10px 0; font-family: monospace;'>
                     {elapsed_hours:02d}:{display_minutes:02d}:{display_seconds:02d}
@@ -1111,19 +1110,19 @@ with tab_tracker:
     
     with col1:
         if not st.session_state.timer_running:
-            st.info("⏱️ Ready to track some time?")
+            st.info("â±ï¸ Ready to track some time?")
     
     with col2:
         if not st.session_state.timer_running:
             timer_category = st.selectbox("Activity", TIME_CATEGORIES, key="start_timer_category")
-            if st.button("▶️ Start Timer", type="primary"):
+            if st.button("â–¶ï¸ Start Timer", type="primary"):
                 st.session_state.timer_running = True
                 st.session_state.timer_start = datetime.now()
                 st.session_state.timer_category = timer_category
                 st.success(f"Started timer for {timer_category}")
                 st.rerun()
         else:
-            if st.button("⏹️ Stop Timer", type="secondary"):
+            if st.button("â¹ï¸ Stop Timer", type="secondary"):
                 # Calculate duration and save
                 end_time = datetime.now()
                 duration = end_time - st.session_state.timer_start
@@ -1157,13 +1156,13 @@ with tab_tracker:
     
     with col3:
         # Quick manual entry
-        if st.button("➕ Quick Entry"):
+        if st.button("âž• Quick Entry"):
             st.session_state.show_manual_entry = True
     
     # Manual time entry form
     if st.session_state.get("show_manual_entry", False):
         with st.form("manual_time_entry"):
-            st.markdown("### ⏰ Manual Time Entry")
+            st.markdown("### â° Manual Time Entry")
             
             entry_col1, entry_col2 = st.columns(2)
             with entry_col1:
@@ -1185,7 +1184,7 @@ with tab_tracker:
             
             form_col1, form_col2 = st.columns(2)
             with form_col1:
-                if st.form_submit_button("💾 Log Time"):
+                if st.form_submit_button("ðŸ’¾ Log Time"):
                     start_dt = datetime.combine(manual_date, manual_start)
                     end_dt = datetime.combine(manual_date, manual_end)
                     duration_minutes = (end_dt - start_dt).total_seconds() / 60
@@ -1215,13 +1214,13 @@ with tab_tracker:
                         st.error("End time must be after start time")
             
             with form_col2:
-                if st.form_submit_button("❌ Cancel"):
+                if st.form_submit_button("âŒ Cancel"):
                     st.session_state.show_manual_entry = False
                     st.rerun()
     
     # Today's time breakdown
     st.markdown("---")
-    section_header("📊 Today's Breakdown")
+    section_header("ðŸ“Š Today's Breakdown")
     
     if not st.session_state.timetrack_df.empty:
         # Ensure proper date handling
@@ -1249,13 +1248,13 @@ with tab_tracker:
                     
                     # Color code based on category
                     if "Studio" in category or "Creative" in category:
-                        color = "🟢"
+                        color = "ðŸŸ¢"
                     elif "Social Media" in category or "Entertainment" in category:
-                        color = "🔴"
+                        color = "ðŸ”´"
                     elif "Sleep" in category or "Meals" in category:
-                        color = "🟡"
+                        color = "ðŸŸ¡"
                     else:
-                        color = "⚪"
+                        color = "âšª"
                     
                     st.markdown(f"{color} **{category}:** {hours:.1f}h ({percentage:.0f}%)")
                 
@@ -1266,40 +1265,40 @@ with tab_tracker:
                 st.markdown("**The Numbers Don't Lie:**")
                 
                 # Reality check calculations
-                studio_time = today_summary.get("🏺 Studio Work", 0) + today_summary.get("🎨 Creative Planning", 0)
-                distraction_time = today_summary.get("📱 Social Media", 0) + today_summary.get("📺 Entertainment", 0)
+                studio_time = today_summary.get("ðŸº Studio Work", 0) + today_summary.get("ðŸŽ¨ Creative Planning", 0)
+                distraction_time = today_summary.get("ðŸ“± Social Media", 0) + today_summary.get("ðŸ“º Entertainment", 0)
                 
                 if studio_time > 0:
-                    st.success(f"🏺 **{studio_time/60:.1f} hours** on pottery/creative work")
+                    st.success(f"ðŸº **{studio_time/60:.1f} hours** on pottery/creative work")
                 else:
-                    st.info("🏺 **0 hours** on pottery today")
+                    st.info("ðŸº **0 hours** on pottery today")
                 
                 if distraction_time > 0:
-                    st.warning(f"📱 **{distraction_time/60:.1f} hours** on social media/entertainment")
+                    st.warning(f"ðŸ“± **{distraction_time/60:.1f} hours** on social media/entertainment")
                     
                     if studio_time > 0:
                         ratio = distraction_time / studio_time
                         if ratio > 2:
-                            st.error(f"📊 Distractions won {ratio:.1f} to 1 today")
+                            st.error(f"ðŸ“Š Distractions won {ratio:.1f} to 1 today")
                         elif ratio > 1:
-                            st.warning(f"📊 Distractions ahead {ratio:.1f}:1")
+                            st.warning(f"ðŸ“Š Distractions ahead {ratio:.1f}:1")
                         else:
-                            st.success(f"💪 Pottery time wins!")
+                            st.success(f"ðŸ’ª Pottery time wins!")
                 
                 # Gentle Frankl nudge (way less preachy)
                 if studio_time < 60:  # Less than 1 hour
                     st.markdown("---")
-                    st.markdown("**🤔 Just wondering:**")
+                    st.markdown("**ðŸ¤” Just wondering:**")
                     st.markdown("*If this day repeated, would you want more studio time?*")
         else:
-            st.info("⏱️ No time tracked today yet. Hit start on a timer above!")
+            st.info("â±ï¸ No time tracked today yet. Hit start on a timer above!")
     else:
-        st.info("⏱️ No time data yet. Ready to see where your hours actually go?")
+        st.info("â±ï¸ No time data yet. Ready to see where your hours actually go?")
     
     # Weekly summary
     if not st.session_state.timetrack_df.empty:
         st.markdown("---")
-        section_header("📈 This Week's Pattern")
+        section_header("ðŸ“ˆ This Week's Pattern")
         
         # Get this week's data - safer date handling
         week_start = date.today() - timedelta(days=date.today().weekday())
@@ -1322,16 +1321,16 @@ with tab_tracker:
                 st.markdown("**Weekly Totals:**")
                 for category, minutes in week_summary.items():
                     hours = minutes / 60
-                    st.markdown(f"• **{category}:** {hours:.1f} hours")
+                    st.markdown(f"â€¢ **{category}:** {hours:.1f} hours")
             
             with week_col2:
                 # Weekly insights
-                studio_weekly = week_summary.get("🏺 Studio Work", 0) + week_summary.get("🎨 Creative Planning", 0)
+                studio_weekly = week_summary.get("ðŸº Studio Work", 0) + week_summary.get("ðŸŽ¨ Creative Planning", 0)
                 days_tracked = len(pd.to_datetime(week_data["date"]).dt.date.unique())
                 
                 st.markdown("**Weekly Insights:**")
-                st.metric("🏺 Studio Hours This Week", f"{studio_weekly/60:.1f}")
-                st.metric("📊 Days Tracked", days_tracked)
+                st.metric("ðŸº Studio Hours This Week", f"{studio_weekly/60:.1f}")
+                st.metric("ðŸ“Š Days Tracked", days_tracked)
                 
                 if studio_weekly > 0:
                     avg_daily = studio_weekly / 7
@@ -1339,14 +1338,14 @@ with tab_tracker:
                 
                 # Gentler weekly insight
                 if studio_weekly < 420:  # Less than 7 hours per week
-                    st.info("💡 Less than 1 hour/day average on pottery this week")
+                    st.info("ðŸ’¡ Less than 1 hour/day average on pottery this week")
         else:
-            st.info("📊 Start tracking to see weekly patterns!")
+            st.info("ðŸ“Š Start tracking to see weekly patterns!")
     
     # Export time tracking data
     if not st.session_state.timetrack_df.empty:
         st.download_button(
-            "📋 Export Time Data CSV",
+            "ðŸ“‹ Export Time Data CSV",
             data=st.session_state.timetrack_df.to_csv(index=False).encode("utf-8"),
             file_name=f"pottery_time_tracking_{date.today().isoformat()}.csv",
             mime="text/csv"
@@ -1354,11 +1353,11 @@ with tab_tracker:
 
 # ---------- Goals Tab ----------
 with tab_goals:
-    section_header("🎯 Intentional Goals")
+    section_header("ðŸŽ¯ Intentional Goals")
     st.markdown("*Transform procrastination into purposeful action*")
     
     # Add new goal
-    with st.expander("➕ Create New Goal", expanded=False):
+    with st.expander("âž• Create New Goal", expanded=False):
         with st.form("add_goal_form"):
             col1, col2 = st.columns([2, 1])
             
@@ -1376,11 +1375,11 @@ with tab_goals:
                 goal_tags = st.text_input("Tags (comma-separated)", placeholder="handles, mugs, technique, practice")
                 
             with col2:
-                goal_priority = st.selectbox("Priority", ["🔴 High", "🟡 Medium", "🟢 Low"])
+                goal_priority = st.selectbox("Priority", ["ðŸ”´ High", "ðŸŸ¡ Medium", "ðŸŸ¢ Low"])
                 target_date = st.date_input("Target Date", value=date.today() + timedelta(days=30))
                 
             # Viktor Frankl integration
-            st.markdown("### 🤔 The Deeper Why")
+            st.markdown("### ðŸ¤” The Deeper Why")
             frankl_why = st.text_area(
                 "Why does this goal matter? What meaning will achieving it bring to your life?",
                 placeholder="How does this goal connect to your larger purpose? What change will it make in the world?",
@@ -1418,7 +1417,7 @@ with tab_goals:
                     pd.DataFrame([new_goal])
                 ], ignore_index=True)
                 save_data(st.session_state.goals_df, GOALS_PATH)
-                st.success("🎯 Goal created!")
+                st.success("ðŸŽ¯ Goal created!")
                 st.rerun()
     
     # Display goals
@@ -1432,7 +1431,7 @@ with tab_goals:
         with col2:
             category_filter = st.multiselect("Category", goals_df["category"].unique().tolist())
         with col3:
-            priority_filter = st.multiselect("Priority", ["🔴 High", "🟡 Medium", "🟢 Low"])
+            priority_filter = st.multiselect("Priority", ["ðŸ”´ High", "ðŸŸ¡ Medium", "ðŸŸ¢ Low"])
         
         # Apply filters
         filtered_goals = goals_df.copy()
@@ -1459,15 +1458,15 @@ with tab_goals:
                     if goal.get("target_date") and pd.notna(goal["target_date"]):
                         days_remaining = (goal["target_date"].date() - date.today()).days
                         if days_remaining > 0:
-                            st.caption(f"🗓️ Target: {goal['target_date'].strftime('%Y-%m-%d')} ({days_remaining} days remaining)")
+                            st.caption(f"ðŸ—“ï¸ Target: {goal['target_date'].strftime('%Y-%m-%d')} ({days_remaining} days remaining)")
                         elif days_remaining == 0:
-                            st.caption("🎯 **Due TODAY!**")
+                            st.caption("ðŸŽ¯ **Due TODAY!**")
                         else:
-                            st.caption(f"⚠️ Overdue by {abs(days_remaining)} days")
+                            st.caption(f"âš ï¸ Overdue by {abs(days_remaining)} days")
                     
                     if goal.get("tags") and goal["tags"].strip():
                         tags_list = [tag.strip() for tag in goal["tags"].split(",") if tag.strip()]
-                        st.caption("🏷️ " + " • ".join(tags_list))
+                        st.caption("ðŸ·ï¸ " + " â€¢ ".join(tags_list))
                 
                 with col2:
                     st.caption(f"**{goal['category']}**")
@@ -1475,16 +1474,16 @@ with tab_goals:
                     
                     # Quick actions
                     if goal["status"] != "Completed":
-                        if st.button("✅ Mark Complete", key=f"complete_{goal['id']}"):
+                        if st.button("âœ… Mark Complete", key=f"complete_{goal['id']}"):
                             # Update goal status
                             idx = st.session_state.goals_df.index[st.session_state.goals_df["id"] == goal["id"]][0]
                             st.session_state.goals_df.loc[idx, "status"] = "Completed"
                             st.session_state.goals_df.loc[idx, "completed_date"] = date.today()
                             save_data(st.session_state.goals_df, GOALS_PATH)
-                            st.success("🎉 Goal completed!")
+                            st.success("ðŸŽ‰ Goal completed!")
                             st.rerun()
                     
-                    if st.button("📝 Add Progress", key=f"progress_{goal['id']}"):
+                    if st.button("ðŸ“ Add Progress", key=f"progress_{goal['id']}"):
                         st.session_state[f"show_progress_{goal['id']}"] = True
                 
                 # Progress note form (conditional)
@@ -1508,13 +1507,13 @@ with tab_goals:
                                 st.session_state[f"show_progress_{goal['id']}"] = False
                                 st.rerun()
     else:
-        st.info("🎯 No goals yet. Create your first intentional goal above!")
+        st.info("ðŸŽ¯ No goals yet. Create your first intentional goal above!")
         st.markdown("**Remember:** Goals without deadlines are just wishes. Goals with deep 'why' become reality.")
     
     # Export goals data
     if not goals_df.empty:
         st.download_button(
-            "📋 Export Goals CSV", 
+            "ðŸ“‹ Export Goals CSV", 
             data=goals_df.to_csv(index=False).encode("utf-8"),
             file_name=f"pottery_goals_{date.today().isoformat()}.csv",
             mime="text/csv"
@@ -1525,7 +1524,7 @@ with tab_portfolio:
     section_header("Studio Portfolio")
     
     # Add new piece form
-    with st.expander("➕ Document New Finished Piece", expanded=False):
+    with st.expander("âž• Document New Finished Piece", expanded=False):
         with st.form("add_portfolio_piece"):
             col1, col2 = st.columns([2, 1])
             
@@ -1556,7 +1555,7 @@ with tab_portfolio:
             t1, t2, t3 = st.columns(3)
             with t1:
                 clay_body = st.text_input("Clay Body", placeholder="B-Mix, Porcelain, Stoneware...")
-                firing_temp = st.text_input("Firing Temp", placeholder="Cone 6, 1240°C, Reduction...")
+                firing_temp = st.text_input("Firing Temp", placeholder="Cone 6, 1240Â°C, Reduction...")
             with t2:
                 glaze_combo = st.text_input("Glaze Combination", placeholder="Temmoku over Shino...")
                 dimensions = st.text_input("Dimensions", placeholder="4\"H x 3.5\"W")
@@ -1707,7 +1706,7 @@ with tab_portfolio:
                     pd.DataFrame([new_piece])
                 ], ignore_index=True)
                 save_data(st.session_state.portfolio_df, PORTFOLIO_PATH)
-                st.success("✨ Added to portfolio!")
+                st.success("âœ¨ Added to portfolio!")
                 st.rerun()
     
     # Display portfolio
@@ -1752,13 +1751,13 @@ with tab_portfolio:
                 
         # Export portfolio data
         st.download_button(
-            "📋 Export Portfolio CSV",
+            "ðŸ“‹ Export Portfolio CSV",
             data=filtered_df.to_csv(index=False).encode("utf-8"),
             file_name=f"pottery_portfolio_{date.today().isoformat()}.csv",
             mime="text/csv"
         )
     else:
-        st.info("🏺 No finished pieces yet. Document your first piece above!")
+        st.info("ðŸº No finished pieces yet. Document your first piece above!")
         
     # Always show export option for template
     if st.session_state.portfolio_df.empty:
@@ -1767,7 +1766,7 @@ with tab_portfolio:
             "who_for", "what_for", "change_intended", "observations"
         ])
         st.download_button(
-            "📄 Download Portfolio Template",
+            "ðŸ“„ Download Portfolio Template",
             data=template_df.to_csv(index=False).encode("utf-8"),
             file_name="pottery_portfolio_template.csv",
             mime="text/csv",
@@ -1779,7 +1778,7 @@ with tab_journal:
     section_header("Studio Journal")
     
     # Add journal entry
-    with st.expander("✏️ New Journal Entry", expanded=True):
+    with st.expander("âœï¸ New Journal Entry", expanded=True):
         with st.form("add_journal_entry"):
             col1, col2 = st.columns([3, 1])
             
@@ -1789,7 +1788,7 @@ with tab_journal:
             
             with col2:
                 entry_date = st.date_input("Date", value=date.today())
-                mood = st.selectbox("Studio Mood", ["😊 Great", "😌 Good", "😐 Okay", "😕 Tough", "😤 Frustrated"])
+                mood = st.selectbox("Studio Mood", ["ðŸ˜Š Great", "ðŸ˜Œ Good", "ðŸ˜ Okay", "ðŸ˜• Tough", "ðŸ˜¤ Frustrated"])
                 
             # Optional connections
             techniques_practiced = st.text_input("Techniques Practiced", placeholder="Pulling handles, trimming feet, wax resist...")
@@ -1797,9 +1796,9 @@ with tab_journal:
             
             # Viktor Frankl Reflection
             st.markdown("---")
-            st.markdown("### 🤔 Daily Reflection")
+            st.markdown("### ðŸ¤” Daily Reflection")
             st.markdown('*"Live as if you were living already for the second time and as if you had acted the first time as wrongly as you are about to act now!"*')
-            st.caption("— Viktor Frankl")
+            st.caption("â€” Viktor Frankl")
             
             frankl_reflection = st.text_area(
                 "If you were living today for the second time, what would you do differently?",
@@ -1825,6 +1824,130 @@ with tab_journal:
             
             if submitted_journal and journal_content.strip():
                 linked_event_id = None
-                if linked_journal_
+                if linked_journal_event != "None" and not recent_events.empty:
+                    event_index = event_options.index(linked_journal_event) - 1
+                    if 0 <= event_index < len(recent_events):
+                        linked_event_id = recent_events.iloc[event_index]["id"]
                 
-            )
+                new_entry = {
+                    "id": generate_id(),
+                    "entry_date": entry_date,
+                    "title": journal_title.strip() if journal_title.strip() else f"Studio Notes - {entry_date}",
+                    "content": journal_content.strip(),
+                    "mood": mood,
+                    "techniques_practiced": techniques_practiced.strip(),
+                    "materials_used": materials_used.strip(),
+                    "linked_event_id": linked_event_id,
+                    "created_at": _now_tzless(),
+                    "frankl_reflection": frankl_reflection.strip(),
+                    "time_awareness_reflection": time_awareness.strip(),
+                }
+                
+                st.session_state.journal_df = pd.concat([
+                    st.session_state.journal_df,
+                    pd.DataFrame([new_entry])
+                ], ignore_index=True)
+                save_data(st.session_state.journal_df, JOURNAL_PATH)
+                st.success("ðŸ“ Journal entry saved!")
+                st.rerun()
+    
+    # Display journal entries
+    journal_df = st.session_state.journal_df.sort_values("entry_date", ascending=False)
+    
+    if not journal_df.empty:
+        st.markdown("### Recent Entries")
+        for _, entry in journal_df.head(10).iterrows():
+            with st.container(border=True):
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.markdown(f"**{entry['title']}**")
+                    st.markdown(entry["content"])
+                    
+                    # Show philosophical reflections if they exist
+                    if entry.get("frankl_reflection") and entry["frankl_reflection"].strip():
+                        st.markdown("---")
+                        st.markdown("**ðŸ¤” Second Life Reflection:**")
+                        st.markdown(f"*{entry['frankl_reflection']}*")
+                    
+                    if entry.get("time_awareness_reflection") and entry["time_awareness_reflection"].strip():
+                        st.markdown("**â° Time Awareness:**")
+                        st.markdown(f"*{entry['time_awareness_reflection']}*")
+                    
+                    if entry.get("techniques_practiced"):
+                        st.caption(f"ðŸŽ¨ Techniques: {entry['techniques_practiced']}")
+                    if entry.get("materials_used"):
+                        st.caption(f"ðŸ§± Materials: {entry['materials_used']}")
+                with col2:
+                    st.caption(entry["entry_date"].strftime("%Y-%m-%d"))
+                    st.markdown(entry["mood"])
+    else:
+        st.info("ðŸ““ Start your first studio journal entry above!")
+        
+    # Export journal data
+    if not journal_df.empty:
+        st.download_button(
+            "ðŸ“‹ Export Journal CSV",
+            data=journal_df.to_csv(index=False).encode("utf-8"),
+            file_name=f"pottery_journal_{date.today().isoformat()}.csv",
+            mime="text/csv"
+        )
+# ---------- Search Tab ----------
+with tab_search:
+    section_header("Search")
+    q = st.text_input("Search term", placeholder="mug, shino, Cone 6, Harford Fair, goal title")
+    scope = st.multiselect(
+        "Search areas",
+        ["Events", "Journal", "Portfolio", "Goals"],
+        default=["Events", "Journal", "Portfolio", "Goals"],
+    )
+
+    if q.strip():
+        st.markdown(f"**Results for:** {q}")
+
+        # Events
+        if "Events" in scope:
+            st.markdown("#### Events")
+            _df = st.session_state.events_df.copy()
+            if not _df.empty:
+                mask = _df.astype(str).apply(lambda c: c.str.contains(q, case=False, na=False)).any(axis=1)
+                hits = _df[mask].sort_values("start")
+                if not hits.empty:
+                    render_agenda(hits)
+                else:
+                    st.caption("No events found")
+            else:
+                st.caption("No events yet")
+
+# Studio Tab
+with tab_studio:
+    section_header("Studio Schedule")
+    studio_df = st.session_state.events_df[st.session_state.events_df["category"] == "Studio"]
+    filtered_studio = filter_events_df(studio_df)
+    render_agenda(filtered_studio)
+
+# Community Tab
+with tab_comm:
+    section_header("Community Events")
+    comm_df = st.session_state.events_df[st.session_state.events_df["category"] == "Community"]
+    filtered_comm = filter_events_df(comm_df)
+    render_agenda(filtered_comm)
+
+# Public Tab
+with tab_public:
+    section_header("Public Events")
+    public_df = st.session_state.events_df[st.session_state.events_df["category"] == "Public"]
+    filtered_public = filter_events_df(public_df)
+    render_agenda(filtered_public)
+
+# All Events Tab
+with tab_all:
+    section_header("All Events")
+    filtered_all = filter_events_df(st.session_state.events_df)
+    render_agenda(filtered_all)
+    
+    st.download_button(
+        "ðŸ“‹ Export All Events CSV",
+        data=filtered_all.to_csv(index=False).encode("utf-8"),
+        file_name=f"pottery_calendar_{date.today().isoformat()}.csv",
+        mime="text/csv"
+    )
