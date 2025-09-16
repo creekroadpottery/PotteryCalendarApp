@@ -15,6 +15,7 @@ from PIL import Image
 import io
 
 APP_TITLE = "Pottery Maker Manager"
+APP_VERSION = "1.0.0"
 EVENTS_PATH = "data/events.csv"
 JOURNAL_PATH = "data/journal_entries.csv"
 PORTFOLIO_PATH = "data/finished_works.csv"
@@ -771,8 +772,8 @@ if "calendar_date" not in st.session_state:
     st.session_state.calendar_date = date.today()
 
 # Tabs
-tab_calendar, tab_tracker, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all = st.tabs([
-    "📅 Calendar", "⏱️ Time Tracker", "🎯 Goals", "🏺 Portfolio", "📓 Journal", "🔍 Search", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events",
+tab_calendar, tab_tracker, tab_goals, tab_portfolio, tab_journal, tab_search, tab_studio, tab_comm, tab_public, tab_all, tab_about = st.tabs([
+    "📅 Calendar", "⏱️ Time Tracker", "🎯 Goals", "🏺 Portfolio", "📝 Journal", "🔍 Search", "🎨 Studio", "🤝 Community", "🌍 Public", "📋 All Events", "ℹ️ About",
 ])
 
 # ---------- Calendar Tab (Add Event) ----------
@@ -1824,130 +1825,4 @@ with tab_journal:
             
             if submitted_journal and journal_content.strip():
                 linked_event_id = None
-                if linked_journal_event != "None" and not recent_events.empty:
-                    event_index = event_options.index(linked_journal_event) - 1
-                    if 0 <= event_index < len(recent_events):
-                        linked_event_id = recent_events.iloc[event_index]["id"]
-                
-                new_entry = {
-                    "id": generate_id(),
-                    "entry_date": entry_date,
-                    "title": journal_title.strip() if journal_title.strip() else f"Studio Notes - {entry_date}",
-                    "content": journal_content.strip(),
-                    "mood": mood,
-                    "techniques_practiced": techniques_practiced.strip(),
-                    "materials_used": materials_used.strip(),
-                    "linked_event_id": linked_event_id,
-                    "created_at": _now_tzless(),
-                    "frankl_reflection": frankl_reflection.strip(),
-                    "time_awareness_reflection": time_awareness.strip(),
-                }
-                
-                st.session_state.journal_df = pd.concat([
-                    st.session_state.journal_df,
-                    pd.DataFrame([new_entry])
-                ], ignore_index=True)
-                save_data(st.session_state.journal_df, JOURNAL_PATH)
-                st.success("📝 Journal entry saved!")
-                st.rerun()
-    
-    # Display journal entries
-    journal_df = st.session_state.journal_df.sort_values("entry_date", ascending=False)
-    
-    if not journal_df.empty:
-        st.markdown("### Recent Entries")
-        for _, entry in journal_df.head(10).iterrows():
-            with st.container(border=True):
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    st.markdown(f"**{entry['title']}**")
-                    st.markdown(entry["content"])
-                    
-                    # Show philosophical reflections if they exist
-                    if entry.get("frankl_reflection") and entry["frankl_reflection"].strip():
-                        st.markdown("---")
-                        st.markdown("**🤔 Second Life Reflection:**")
-                        st.markdown(f"*{entry['frankl_reflection']}*")
-                    
-                    if entry.get("time_awareness_reflection") and entry["time_awareness_reflection"].strip():
-                        st.markdown("**⏰ Time Awareness:**")
-                        st.markdown(f"*{entry['time_awareness_reflection']}*")
-                    
-                    if entry.get("techniques_practiced"):
-                        st.caption(f"🎨 Techniques: {entry['techniques_practiced']}")
-                    if entry.get("materials_used"):
-                        st.caption(f"🧱 Materials: {entry['materials_used']}")
-                with col2:
-                    st.caption(entry["entry_date"].strftime("%Y-%m-%d"))
-                    st.markdown(entry["mood"])
-    else:
-        st.info("📓 Start your first studio journal entry above!")
-        
-    # Export journal data
-    if not journal_df.empty:
-        st.download_button(
-            "📋 Export Journal CSV",
-            data=journal_df.to_csv(index=False).encode("utf-8"),
-            file_name=f"pottery_journal_{date.today().isoformat()}.csv",
-            mime="text/csv"
-        )
-# ---------- Search Tab ----------
-with tab_search:
-    section_header("Search")
-    q = st.text_input("Search term", placeholder="mug, shino, Cone 6, Harford Fair, goal title")
-    scope = st.multiselect(
-        "Search areas",
-        ["Events", "Journal", "Portfolio", "Goals"],
-        default=["Events", "Journal", "Portfolio", "Goals"],
-    )
-
-    if q.strip():
-        st.markdown(f"**Results for:** {q}")
-
-        # Events
-        if "Events" in scope:
-            st.markdown("#### Events")
-            _df = st.session_state.events_df.copy()
-            if not _df.empty:
-                mask = _df.astype(str).apply(lambda c: c.str.contains(q, case=False, na=False)).any(axis=1)
-                hits = _df[mask].sort_values("start")
-                if not hits.empty:
-                    render_agenda(hits)
-                else:
-                    st.caption("No events found")
-            else:
-                st.caption("No events yet")
-
-# Studio Tab
-with tab_studio:
-    section_header("Studio Schedule")
-    studio_df = st.session_state.events_df[st.session_state.events_df["category"] == "Studio"]
-    filtered_studio = filter_events_df(studio_df)
-    render_agenda(filtered_studio)
-
-# Community Tab
-with tab_comm:
-    section_header("Community Events")
-    comm_df = st.session_state.events_df[st.session_state.events_df["category"] == "Community"]
-    filtered_comm = filter_events_df(comm_df)
-    render_agenda(filtered_comm)
-
-# Public Tab
-with tab_public:
-    section_header("Public Events")
-    public_df = st.session_state.events_df[st.session_state.events_df["category"] == "Public"]
-    filtered_public = filter_events_df(public_df)
-    render_agenda(filtered_public)
-
-# All Events Tab
-with tab_all:
-    section_header("All Events")
-    filtered_all = filter_events_df(st.session_state.events_df)
-    render_agenda(filtered_all)
-    
-    st.download_button(
-        "📋 Export All Events CSV",
-        data=filtered_all.to_csv(index=False).encode("utf-8"),
-        file_name=f"pottery_calendar_{date.today().isoformat()}.csv",
-        mime="text/csv"
-    )
+                if linked_journal_
