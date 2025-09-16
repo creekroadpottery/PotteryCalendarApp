@@ -1826,3 +1826,5 @@ with tab_journal:
             if submitted_journal and journal_content.strip():
                 linked_event_id = None
                 if linked_journal_
+                
+            )
