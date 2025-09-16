@@ -2062,8 +2062,10 @@ with tab_about:
     with col1:
         st.markdown("### 🎯 **Why This App Exists**")
         st.markdown("""
+        Created by Alford Wayman of Creek Road Pottery LLC, 9/15/2025, by a maker, for makers.
         Most calendar apps treat your time like it's infinite. Most portfolio trackers ignore the deeper questions. 
-        Most productivity apps forget that creativity and meaning matter more than mere efficiency.
+        Most productivity apps forget that creativity and meaning matter more than mere efficiency. 
+    
         
         **This app is different.** It's built on two foundational ideas:
         
