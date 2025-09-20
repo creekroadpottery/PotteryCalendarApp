@@ -221,7 +221,7 @@ def expand_recurrence(base_event: dict, freq_name: str, count: int | None, until
     if count and count > 0:
         kwargs["count"] = count
     if until:
-        until_dt = datetime.combine(until, time(23, 59, 59))
+        until_dt = datetime.combine(until, dt_time(23, 59, 59))
         kwargs["until"] = until_dt
 
     instances = []
@@ -569,8 +569,8 @@ def render_year_calendar(events_df, current_date):
     
     # Year events summary
     if not events_df.empty:
-        year_start = datetime.combine(date(year, 1, 1), time(0, 0))
-        year_end = datetime.combine(date(year + 1, 1, 1), time(0, 0))
+        year_start = datetime.combine(date(year, 1, 1), dt_time(0, 0))
+        year_end = datetime.combine(date(year + 1, 1, 1), dt_time(0, 0))
         year_events = events_df[(events_df["start"] >= year_start) & (events_df["start"] < year_end)]
         
         # Year stats
@@ -612,11 +612,11 @@ def render_year_calendar(events_df, current_date):
                 # Filter events for this month
                 month_events = pd.DataFrame()
                 if not events_df.empty:
-                    month_start = datetime.combine(date(year, month_num, 1), time(0, 0))
+                    month_start = datetime.combine(date(year, month_num, 1), dt_time(0, 0))
                     if month_num == 12:
-                        month_end = datetime.combine(date(year + 1, 1, 1), time(0, 0))
+                        month_end = datetime.combine(date(year + 1, 1, 1), dt_time(0, 0))
                     else:
-                        month_end = datetime.combine(date(year, month_num + 1, 1), time(0, 0))
+                        month_end = datetime.combine(date(year, month_num + 1, 1), dt_time(0, 0))
                     month_events = events_df[(events_df["start"] >= month_start) & (events_df["start"] < month_end)]
                 
                 # Create mini calendar HTML
@@ -669,12 +669,12 @@ def filter_events_df(df: pd.DataFrame) -> pd.DataFrame:
         return df
     df = df.copy()
     # Time window for selected month
-    start_month = datetime.combine(selected_month.replace(day=1), time(0, 0))
+    start_month = datetime.combine(selected_month.replace(day=1), dt_time(0, 0))
     if selected_month.month == 12:
         next_month = date(selected_month.year + 1, 1, 1)
     else:
         next_month = date(selected_month.year, selected_month.month + 1, 1)
-    end_month = datetime.combine(next_month, time(0, 0))
+    end_month = datetime.combine(next_month, dt_time(0, 0))
 
     df = df[(df["start"] < end_month) & (df["end"] >= start_month)]
     if not show_past:
@@ -2062,10 +2062,8 @@ with tab_about:
     with col1:
         st.markdown("### 🎯 **Why This App Exists**")
         st.markdown("""
-        Created by Alford Wayman of Creek Road Pottery LLC, 9/15/2025, by a maker, for makers.
         Most calendar apps treat your time like it's infinite. Most portfolio trackers ignore the deeper questions. 
-        Most productivity apps forget that creativity and meaning matter more than mere efficiency. 
-    
+        Most productivity apps forget that creativity and meaning matter more than mere efficiency.
         
         **This app is different.** It's built on two foundational ideas:
         
