@@ -683,12 +683,12 @@ def filter_events_df(df: pd.DataFrame) -> pd.DataFrame:
         return df
     df = df.copy()
     # Time window for selected month
-    start_month = datetime.combine(selected_month.replace(day=1), time(0, 0))
+    start_month = datetime.combine(selected_month.replace(day=1), dt_time(0, 0))
     if selected_month.month == 12:
         next_month = date(selected_month.year + 1, 1, 1)
     else:
         next_month = date(selected_month.year, selected_month.month + 1, 1)
-    end_month = datetime.combine(next_month, time(0, 0))
+    end_month = datetime.combine(next_month, dt_time(0, 0))
 
     df = df[(df["start"] < end_month) & (df["end"] >= start_month)]
     if not show_past:
