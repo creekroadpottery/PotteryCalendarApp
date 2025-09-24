@@ -699,7 +699,7 @@ def filter_events_df(df: pd.DataFrame) -> pd.DataFrame:
         df = df[df["task_type"].isin(task_filter)]
     return df.sort_values("start")
 
-def render_agenda(df: pd.DataFrame):
+def render_agenda(df: pd.DataFrame, context: str = "default"):
     """Render agenda list view"""
     if df.empty:
         st.info("No events to show")
@@ -725,15 +725,15 @@ def render_agenda(df: pd.DataFrame):
                 with c2:
                     badge(row["category"], color)
                     st.markdown("<br>", unsafe_allow_html=True)  # Small spacing
-                    if st.button("🗑️ Delete", key=f"delete_{row['id']}", help="Delete this event"):
+                    if st.button("🗑️ Delete", key=f"delete_{context}_{row['id']}", help="Delete this event"):
                         # Confirmation dialog using session state
-                        if f"confirm_delete_{row['id']}" not in st.session_state:
-                            st.session_state[f"confirm_delete_{row['id']}"] = True
+                        if f"confirm_delete_{context}_{row['id']}" not in st.session_state:
+                            st.session_state[f"confirm_delete_{context}_{row['id']}"] = True
                             st.warning(f"Delete '{row['title']}'? Click Delete again to confirm.")
                             st.rerun()
                         else:
                             # Actually delete the event
-                            del st.session_state[f"confirm_delete_{row['id']}"]
+                            del st.session_state[f"confirm_delete_{context}_{row['id']}"]
                             delete_event(row['id'])
 
 # ---------- Main App ----------
@@ -848,7 +848,7 @@ with tab_calendar:
     elif calendar_view == "Agenda":
         section_header("📅 Agenda View")
         filtered_events = filter_events_df(st.session_state.events_df)
-        render_agenda(filtered_events)
+        render_agenda(filtered_events, "calendar_agenda")
     
     st.markdown("---")
     
@@ -1938,7 +1938,7 @@ with tab_search:
             mask = _df.astype(str).apply(lambda c: c.str.contains(q, case=False, na=False)).any(axis=1)
             hits = _df[mask].sort_values("start")
             if not hits.empty:
-                render_agenda(hits)
+                render_agenda(hits, "search_events")
             else:
                 st.caption("No events found")
         
@@ -2003,7 +2003,7 @@ with tab_studio:
     section_header("🎨 Studio Schedule")
     studio_df = st.session_state.events_df[st.session_state.events_df["category"] == "Studio"]
     filtered_studio = filter_events_df(studio_df)
-    render_agenda(filtered_studio)
+    render_agenda(filtered_studio, "studio")
     
     if not filtered_studio.empty:
         st.download_button(
@@ -2018,7 +2018,7 @@ with tab_comm:
     section_header("🤝 Community Events")
     comm_df = st.session_state.events_df[st.session_state.events_df["category"] == "Community"]
     filtered_comm = filter_events_df(comm_df)
-    render_agenda(filtered_comm)
+    render_agenda(filtered_comm, "community")
     
     if not filtered_comm.empty:
         st.download_button(
@@ -2033,7 +2033,7 @@ with tab_public:
     section_header("🌍 Public Events")
     public_df = st.session_state.events_df[st.session_state.events_df["category"] == "Public"]
     filtered_public = filter_events_df(public_df)
-    render_agenda(filtered_public)
+    render_agenda(filtered_public, "public")
     
     if not filtered_public.empty:
         st.download_button(
@@ -2047,7 +2047,7 @@ with tab_public:
 with tab_all:
     section_header("📋 All Events")
     filtered_all = filter_events_df(st.session_state.events_df)
-    render_agenda(filtered_all)
+    render_agenda(filtered_all, "all_events")
     
     if not filtered_all.empty:
         st.download_button(
